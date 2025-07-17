@@ -163,19 +163,6 @@ const Home = () => {
 
   return (
     <Box>
-      {/* Free Shipping Stable Banner */}
-      <Box sx={{
-        width: '100%',
-        background: '#b39ddb',
-        py: 1,
-        mb: 1.5,
-        borderBottom: '1px solid #e0e0e0',
-        textAlign: 'center',
-      }}>
-        <Typography sx={{ fontWeight: 600, color: '#222', fontSize: { xs: '1.05rem', sm: '1.15rem' }, letterSpacing: 1 }}>
-          🚚 Free shipping for campus students
-        </Typography>
-      </Box>
       {/* Image Slideshow Hero Section */}
       <Box sx={{
         position: 'relative',

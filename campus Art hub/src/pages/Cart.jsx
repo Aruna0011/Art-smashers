@@ -317,26 +317,6 @@ const Cart = () => {
               Continue Shopping
             </Button>
           </Paper>
-
-          {/* Delivery Info */}
-          <Paper sx={{ p: 3, mt: 3, backgroundColor: '#FFF8DC' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-              <LocalShipping sx={{ mr: 1, color: '#8B4513' }} />
-              <Typography variant="h6">Delivery Information</Typography>
-            </Box>
-            <Typography variant="body2" color="text.secondary" gutterBottom>
-              • Free delivery within campus
-            </Typography>
-            <Typography variant="body2" color="text.secondary" gutterBottom>
-              • Delivery time: 3-5 business days
-            </Typography>
-            <Typography variant="body2" color="text.secondary" gutterBottom>
-              • Secure packaging for artwork protection
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              • Contact us for bulk orders
-            </Typography>
-          </Paper>
         </Grid>
       </Grid>
     </Container>

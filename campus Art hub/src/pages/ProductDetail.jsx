@@ -289,10 +289,6 @@ const ProductDetail = () => {
                 )}
               </Box>
 
-              <Typography variant="body1" sx={{ mb: 3 }}>
-                {enhancedProduct.description}
-              </Typography>
-
               {/* Quantity and Actions */}
               <Box sx={{ mb: 3 }}>
                 <Typography variant="subtitle1" gutterBottom>
@@ -321,39 +317,7 @@ const ProductDetail = () => {
                 >
                   Add to Cart
                 </Button>
-                <Button
-                  variant="outlined"
-                  size="large"
-                  startIcon={<Favorite />}
-                  onClick={handleWishlist}
-                >
-                  Wishlist
-                </Button>
-                <Button
-                  variant="outlined"
-                  size="large"
-                  startIcon={<Share />}
-                  onClick={handleShare}
-                >
-                  Share
-                </Button>
               </Box>
-
-              {/* Delivery Info */}
-              <Paper sx={{ p: 2, mb: 3, backgroundColor: '#FFF8DC' }}>
-                <Typography variant="subtitle1" gutterBottom>
-                  Delivery Information
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  • Free delivery within campus
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  • Delivery time: {enhancedProduct.deliveryTime}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  • Payment: COD, UPI, Cards accepted
-                </Typography>
-              </Paper>
             </Grid>
           </Grid>
           <Divider sx={{ my: 4 }} />
