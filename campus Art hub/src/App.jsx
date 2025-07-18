@@ -28,10 +28,10 @@ import UserProtectedRoute from './components/UserProtectedRoute';
 const theme = createTheme({
   palette: {
     primary: {
-      main: '#667eea', // Beautiful purple-blue
+      main: '#b39ddb', // Pastel lavender
     },
     secondary: {
-      main: '#764ba2', // Deep purple
+      main: '#b39ddb', // Pastel lavender
     },
     background: {
       default: '#f8f9ff', // Light blue tint

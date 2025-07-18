@@ -50,6 +50,7 @@ import { useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
 import toast from 'react-hot-toast';
 import userService from '../utils/userService';
+import { orderStore } from '../utils/orderStore';
 
 const UserProfile = () => {
   const navigate = useNavigate();
@@ -63,6 +64,9 @@ const UserProfile = () => {
     return userService.getCurrentUser();
   });
 
+  // Replace mock order history with real orders for the current user
+  const [orderHistory, setOrderHistory] = useState([]);
+
   useEffect(() => {
     console.log('UserProfile: userData =', userData);
     if (!userData) {
@@ -73,53 +77,27 @@ const UserProfile = () => {
     }
   }, [userData, navigate]);
 
+  useEffect(() => {
+    if (userData) {
+      // Get all orders and filter for current user
+      const allOrders = orderStore.getAllOrders();
+      const userOrders = allOrders.filter(order => {
+        // Match by id or email (for robustness)
+        if (!order.customer) return false;
+        return (
+          (order.customer.id && order.customer.id === userData.id) ||
+          (order.customer.email && order.customer.email === userData.email)
+        );
+      });
+      setOrderHistory(userOrders);
+    }
+  }, [userData]);
+
   // Prevent rendering if not logged in
   if (!userData) {
     console.log('UserProfile: Returning null - no user data');
     return null;
   }
-
-  // Mock order history
-  const [orderHistory] = useState([
-    {
-      id: 'ORD001',
-      date: '2024-03-15',
-      status: 'delivered',
-      total: 4900,
-      items: [
-        { name: 'Abstract Canvas Painting', quantity: 1, price: 2500 },
-        { name: 'Handcrafted Pottery Vase', quantity: 2, price: 1200 },
-      ],
-      paymentMethod: 'UPI',
-      deliveryDate: '2024-03-18',
-      address: '123 Art Street, Mumbai, Maharashtra - 400001',
-    },
-    {
-      id: 'ORD002',
-      date: '2024-02-20',
-      status: 'delivered',
-      total: 1800,
-      items: [
-        { name: 'Watercolor Landscape', quantity: 1, price: 1800 },
-      ],
-      paymentMethod: 'COD',
-      deliveryDate: '2024-02-23',
-      address: '123 Art Street, Mumbai, Maharashtra - 400001',
-    },
-    {
-      id: 'ORD003',
-      date: '2024-01-25',
-      status: 'delivered',
-      total: 1200,
-      items: [
-        { name: 'Digital Art Print', quantity: 1, price: 800 },
-        { name: 'Handmade Jewelry', quantity: 1, price: 400 },
-      ],
-      paymentMethod: 'Card',
-      deliveryDate: '2024-01-28',
-      address: '123 Art Street, Mumbai, Maharashtra - 400001',
-    },
-  ]);
 
   const [editData, setEditData] = useState(userData ? { ...userData } : {});
 

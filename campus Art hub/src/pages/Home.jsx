@@ -243,11 +243,11 @@ const Home = () => {
               '#FFF5BA', // pastel yellow
               '#D0F4DE', // pastel mint
               '#B5EAD7', // pastel green
-              '#C7CEEA', // pastel purple
+              '#b39ddb', // pastel lavender (replaces #C7CEEA)
               '#FFDAC1', // pastel peach
               '#E2F0CB', // pastel light green
               '#B5D8FA', // pastel blue
-              '#F3C6E8', // pastel lavender
+              '#b39ddb', // pastel lavender (replaces #F3C6E8)
             ];
             const bgColor = colors[index % colors.length];
             return (
@@ -541,7 +541,7 @@ const Home = () => {
                           color="primary" 
                           sx={{ 
                             fontWeight: 700,
-                            background: 'linear-gradient(45deg, #667eea, #764ba2)',
+                            background: 'linear-gradient(45deg, #b39ddb, #764ba2)',
                             WebkitBackgroundClip: 'text',
                             WebkitTextFillColor: 'transparent',
                             fontSize: { xs: '1rem', md: '1.25rem' }

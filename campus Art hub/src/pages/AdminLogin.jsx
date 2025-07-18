@@ -70,7 +70,7 @@ const AdminLogin = () => {
   };
 
   return (
-    <Box sx={{ minHeight: '100vh', width: '100vw', background: 'radial-gradient(circle at 70% 20%, #a259e6 0%, #6a11cb 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+    <Box sx={{ minHeight: '100vh', width: '100vw', background: 'radial-gradient(circle at 70% 20%, #b39ddb 0%, #b39ddb 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
       {/* Decorative Snail SVG */}
       <Box sx={{ position: 'absolute', top: 32, left: '50%', transform: 'translateX(-50%)', zIndex: 1 }}>
         <svg width="80" height="60" viewBox="0 0 80 60" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -160,7 +160,7 @@ const AdminLogin = () => {
               variant="contained"
               size="large"
               sx={{
-                background: 'linear-gradient(90deg, #6a11cb 0%, #a259e6 100%)',
+                background: 'linear-gradient(90deg, #b39ddb 0%, #b39ddb 100%)',
                 color: '#fff',
                 fontWeight: 600,
                 fontSize: 16,

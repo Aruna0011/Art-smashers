@@ -39,7 +39,7 @@ function ProgressBar({ currentStep = 2 }) {
                 width: 28,
                 height: 28,
                 borderRadius: '50%',
-                background: idx <= currentStep ? '#a259e6' : '#eee',
+                background: idx <= currentStep ? '#b39ddb' : '#eee',
                 color: idx <= currentStep ? '#fff' : '#888',
                 display: 'flex',
                 alignItems: 'center',
@@ -53,10 +53,10 @@ function ProgressBar({ currentStep = 2 }) {
             >
               {idx + 1}
             </Box>
-            <Typography sx={{ fontSize: 13, fontWeight: idx === currentStep ? 700 : 500, color: idx === currentStep ? '#a259e6' : '#888', mt: 0.5 }}>{step.label}</Typography>
+            <Typography sx={{ fontSize: 13, fontWeight: idx === currentStep ? 700 : 500, color: idx === currentStep ? '#6a11cb' : '#888', mt: 0.5 }}>{step.label}</Typography>
           </Box>
           {idx < steps.length - 1 && (
-            <Box sx={{ flex: 1, height: 2, background: idx < currentStep ? '#a259e6' : '#eee', mx: 1.5, borderRadius: 1 }} />
+            <Box sx={{ flex: 1, height: 2, background: idx < currentStep ? '#6a11cb' : '#eee', mx: 1.5, borderRadius: 1 }} />
           )}
         </React.Fragment>
       ))}
@@ -185,12 +185,16 @@ function PaymentSection({ paymentMethod, setPaymentMethod, orderTotal, discount,
           key={option.value}
           sx={{
             borderRadius: 2.5,
-            border: paymentMethod === option.value ? '2px solid #a259e6' : '1.5px solid #e0e0e0',
+            border: paymentMethod === option.value ? '2px solid #6a11cb' : '1.5px solid #e0e0e0',
             background: 'transparent',
             mb: 2,
             cursor: 'pointer',
             position: 'relative',
             transition: 'border-color 0.2s, background 0.2s',
+            boxShadow: { xs: '0 1px 6px rgba(160,89,230,0.07)', md: 'none' },
+            mx: { xs: 1, md: 0 },
+            p: { xs: 1, md: 2 },
+            minHeight: { xs: 60, md: 80 },
           }}
           onClick={() => {
             if (expanded === option.value) {
@@ -214,7 +218,7 @@ function PaymentSection({ paymentMethod, setPaymentMethod, orderTotal, discount,
                     ₹{orderTotal - discount}
                   </Typography>
                   {discount > 0 && (
-                    <Chip label={`Save ₹${discount}`} color="success" size="small" sx={{ mt: 0.5, fontWeight: 600, background: '#e6f4ea', color: '#1aaf5d' }} />
+                    <Chip label={`Save ₹${discount}`} color="success" size="small" sx={{ mt: 0.5, fontWeight: 600, background: '#e6f4ea', color: '#1aaf5d', position: 'absolute', top: 8, right: 8 }} />
                   )}
                 </>
               ) : (
@@ -233,7 +237,7 @@ function PaymentSection({ paymentMethod, setPaymentMethod, orderTotal, discount,
                 width: 22,
                 height: 22,
                 borderRadius: '50%',
-                border: paymentMethod === option.value ? '6px solid #a259e6' : '2px solid #bbb',
+                border: paymentMethod === option.value ? '6px solid #6a11cb' : '2px solid #bbb',
                 background: '#fff',
                 ml: 2,
                 boxSizing: 'border-box',
@@ -272,29 +276,33 @@ function PriceDetails({ subtotal, deliveryFee, total, discount, paymentMethod })
         <Typography color="text.secondary">Total Product Price</Typography>
         <Typography>+ ₹{subtotal}</Typography>
       </Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-        <Typography color="text.secondary">Total Discounts</Typography>
-        <Typography color="success.main">- ₹{discount}</Typography>
-      </Box>
+      {discount > 0 && (
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+          <Typography color="text.secondary">Total Discounts</Typography>
+          <Typography color="success.main">- ₹{discount}</Typography>
+        </Box>
+      )}
       <Divider sx={{ my: 1 }} />
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
         <Typography variant="h6">Order Total</Typography>
         <Typography variant="h6">₹{total}</Typography>
       </Box>
-      <Alert
-        severity="success"
-        sx={{
-          mb: 2,
-          py: 1,
-          px: 2,
-          fontWeight: 600,
-          background: '#e6f4ea',
-          color: '#1aaf5d',
-          borderRadius: 1.5,
-        }}
-      >
-        Yay! Your total discount is ₹{discount}
-      </Alert>
+      {discount > 0 && (
+        <Alert
+          severity="success"
+          sx={{
+            mb: 2,
+            py: 1,
+            px: 2,
+            fontWeight: 600,
+            background: '#c7ceea', // pastel lavender
+            color: '#6a11cb', // deeper lavender for text
+            borderRadius: 1.5,
+          }}
+        >
+          Yay! Your total discount is ₹{discount}
+        </Alert>
+      )}
     </Box>
   );
 }
@@ -320,7 +328,7 @@ function PriceBar({ orderTotal, onContinue }) {
         <Typography variant="subtitle1" sx={{ fontWeight: 700, fontSize: '1.1rem' }}>₹{orderTotal}</Typography>
         {/* Removed VIEW PRICE DETAILS text */}
       </Box>
-      <Button variant="contained" color="secondary" sx={{ px: 4, py: 1.2, fontWeight: 700, fontSize: '1.1rem', background: '#a259e6', '&:hover': { background: '#6a11cb' } }} onClick={onContinue}>
+      <Button variant="contained" color="secondary" sx={{ px: 4, py: 1.2, fontWeight: 700, fontSize: '1.1rem', background: '#b39ddb', '&:hover': { background: '#b39ddb' } }} onClick={onContinue}>
         Continue
       </Button>
     </Box>
@@ -334,6 +342,7 @@ const Checkout = () => {
   const [discount, setDiscount] = useState(0);
   const [isPaytmLoading, setIsPaytmLoading] = useState(false);
   const navigate = useNavigate();
+  const [showSummary, setShowSummary] = useState(false);
 
   // Get cart data from store
   const cartItems = cartStore.getCartItems();
@@ -403,9 +412,43 @@ const Checkout = () => {
       }}
     >
       {/* Main content column */}
-      <Box sx={{ flex: 2, width: { xs: '100%', md: '60%' }, maxWidth: 520, mx: 'auto' }}>
+      <Box sx={{ flex: 2, width: { xs: '100%', md: '60%' }, maxWidth: 520, mx: 'auto', px: { xs: 0.5, md: 0 } }}>
         {/* Progress bar */}
         <ProgressBar currentStep={2} />
+        {/* Summary Toggle */}
+        <Button
+          variant="outlined"
+          sx={{ mb: 1, width: '100%', color: '#b39ddb', borderColor: '#b39ddb', fontWeight: 600, fontSize: { xs: '0.95rem', md: '1rem' }, py: { xs: 0.7, md: 1.2 } }}
+          onClick={() => setShowSummary((prev) => !prev)}
+        >
+          {showSummary ? 'Hide Summary' : 'Show Summary'}
+        </Button>
+        {showSummary && (
+          <Box sx={{ mb: 1, p: { xs: 1, md: 2 }, border: '1.5px solid #eee', borderRadius: 2, background: '#fafaff', fontSize: { xs: '0.95rem', md: '1rem' } }}>
+            <Typography variant="h6" sx={{ fontWeight: 700, mb: 1, fontSize: { xs: '1.05rem', md: '1.2rem' } }}>Order Summary</Typography>
+            {cartItems.map((item, idx) => (
+              <Box key={item.id || idx} sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                <Typography sx={{ fontSize: { xs: '0.95rem', md: '1rem' } }}>{item.name} x{item.quantity}</Typography>
+                <Typography sx={{ fontSize: { xs: '0.95rem', md: '1rem' } }}>₹{(item.price * item.quantity).toLocaleString()}</Typography>
+              </Box>
+            ))}
+            <Divider sx={{ my: 1 }} />
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+              <Typography>Total</Typography>
+              <Typography>₹{subtotal}</Typography>
+            </Box>
+            {discount > 0 && (
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                <Typography>Discount</Typography>
+                <Typography color="success.main">- ₹{discount}</Typography>
+              </Box>
+            )}
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.5 }}>
+              <Typography variant="h6" sx={{ fontSize: { xs: '1.05rem', md: '1.2rem' } }}>Grand Total</Typography>
+              <Typography variant="h6" sx={{ fontSize: { xs: '1.05rem', md: '1.2rem' } }}>₹{total}</Typography>
+            </Box>
+          </Box>
+        )}
         {/* Payment method accordion */}
         <PaymentSection
           paymentMethod={paymentMethod}
@@ -416,7 +459,7 @@ const Checkout = () => {
         />
       </Box>
       {/* Price Details column */}
-      <Box sx={{ flex: 1, width: { xs: '100%', md: '40%' }, maxWidth: 420, mx: { xs: 'auto', md: 0 }, mt: { xs: 3, md: 0 } }}>
+      <Box sx={{ flex: 1, width: { xs: '100%', md: '40%' }, maxWidth: 420, mx: { xs: 'auto', md: 0 }, mt: { xs: 2, md: 0 }, px: { xs: 0.5, md: 0 } }}>
         <PriceDetails
           subtotal={subtotal}
           deliveryFee={deliveryFee}
@@ -434,7 +477,7 @@ const Checkout = () => {
           <Button
             variant="contained"
             color="secondary"
-            sx={{ px: 4, py: 1.2, fontWeight: 700, fontSize: '1.1rem', background: '#a259e6', '&:hover': { background: '#6a11cb' } }}
+            sx={{ px: 4, py: 1.2, fontWeight: 700, fontSize: '1.1rem', background: '#b39ddb', '&:hover': { background: '#b39ddb' } }}
             onClick={handlePaytmPayment}
             disabled={isPaytmLoading}
           >
@@ -444,7 +487,7 @@ const Checkout = () => {
           <Button
             variant="contained"
             color="secondary"
-            sx={{ px: 4, py: 1.2, fontWeight: 700, fontSize: '1.1rem', background: '#a259e6', '&:hover': { background: '#6a11cb' } }}
+            sx={{ px: 4, py: 1.2, fontWeight: 700, fontSize: '1.1rem', background: '#b39ddb', '&:hover': { background: '#b39ddb' } }}
             onClick={() => toast.success('Order placed!')}
           >
             Continue

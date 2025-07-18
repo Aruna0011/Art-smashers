@@ -148,26 +148,26 @@ const Products = () => {
 
   const getCategoryColor = (category) => {
     const colors = {
-      'Painting': '#FF6B6B',
+      'Painting': '#b39ddb',
       'Pottery': '#4ECDC4',
       'Digital Art': '#45B7D1',
       'Sculpture': '#96CEB4',
       'Photography': '#FFEAA7',
       'Mixed Media': '#DDA0DD',
     };
-    return colors[category] || '#8B4513';
+    return colors[category] || '#b39ddb';
   };
 
   const getGradientBackground = (category) => {
     const gradients = {
-      'Painting': 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      'Painting': 'linear-gradient(135deg, #b39ddb 0%, #b39ddb 100%)',
       'Pottery': 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
       'Digital Art': 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
       'Sculpture': 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
       'Photography': 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
       'Mixed Media': 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
     };
-    return gradients[category] || 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+    return gradients[category] || 'linear-gradient(135deg, #b39ddb 0%, #b39ddb 100%)';
   };
 
   const isWishlisted = (product) => wishlist.some(item => item.id === product.id);
@@ -310,7 +310,9 @@ const Products = () => {
                   <Box sx={{ position: 'relative', overflow: 'hidden' }}>
                     <CardMedia
                       component="img"
-                      image={new URL(`../assets/${product.image}`, import.meta.url).href}
+                      image={product.image && (product.image.startsWith('data:') || product.image.startsWith('http'))
+                        ? product.image
+                        : new URL(`../assets/${product.image}`, import.meta.url).href}
                       alt={product.name}
                       className="product-image"
                       sx={{

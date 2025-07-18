@@ -82,7 +82,7 @@ const Login = () => {
   };
 
   return (
-    <Box sx={{ minHeight: '100vh', width: '100vw', background: 'radial-gradient(circle at 70% 20%, #a259e6 0%, #6a11cb 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+    <Box sx={{ minHeight: '100vh', width: '100vw', background: 'radial-gradient(circle at 70% 20%, #b39ddb 0%, #b39ddb 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
       {/* Decorative Snail SVG */}
       <Box sx={{ position: 'absolute', top: 32, left: '50%', transform: 'translateX(-50%)', zIndex: 1 }}>
         <svg width="80" height="60" viewBox="0 0 80 60" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -137,7 +137,7 @@ const Login = () => {
           <Typography variant="h5" sx={{ fontWeight: 700, mb: 1, textAlign: 'center' }}>Login to your account</Typography>
           <Typography variant="body2" sx={{ textAlign: 'center', mb: 2 }}>
             Don't have an account?{' '}
-            <Link to="/register" style={{ color: '#6a11cb', fontWeight: 600, textDecoration: 'none' }}>Sign Up Free!</Link>
+            <Link to="/register" style={{ color: '#b39ddb', fontWeight: 600, textDecoration: 'none' }}>Sign Up Free!</Link>
           </Typography>
           {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
           <Box component="form" onSubmit={handleSubmit} sx={{ width: '100%' }}>
@@ -179,11 +179,11 @@ const Login = () => {
                 label={<Typography variant="body2">Remember me</Typography>}
                 sx={{ m: 0 }}
               />
-              <Button onClick={() => setForgotPasswordOpen(true)} sx={{ color: '#6a11cb', textTransform: 'none', fontSize: 14, p: 0, minWidth: 0 }}>
+              <Button onClick={() => setForgotPasswordOpen(true)} sx={{ color: '#b39ddb', textTransform: 'none', fontSize: 14, p: 0, minWidth: 0 }}>
                 Forgot password?
               </Button>
             </Box>
-            <Button type="submit" fullWidth variant="contained" size="large" sx={{ background: 'linear-gradient(90deg, #6a11cb 0%, #a259e6 100%)', color: '#fff', fontWeight: 600, fontSize: 16, boxShadow: 2, py: 1.5, mb: 1, mt: 1 }}>
+            <Button type="submit" fullWidth variant="contained" size="large" sx={{ background: 'linear-gradient(90deg, #b39ddb 0%, #b39ddb 100%)', color: '#fff', fontWeight: 600, fontSize: 16, boxShadow: 2, py: 1.5, mb: 1, mt: 1 }}>
               Login with email
             </Button>
           </Box>

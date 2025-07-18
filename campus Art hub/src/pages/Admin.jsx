@@ -1082,8 +1082,8 @@ const Admin = () => {
     <Container maxWidth="xl" sx={{ py: 4 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 4 }}>
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          <Dashboard sx={{ mr: 2, fontSize: 32, color: '#8B4513' }} />
-          <Typography variant="h4">
+          <Dashboard sx={{ mr: 2, fontSize: { xs: 24, md: 32 }, color: '#8B4513' }} />
+          <Typography variant="h4" sx={{ fontSize: { xs: '1.3rem', md: '2.125rem' } }}>
             Admin Dashboard
           </Typography>
         </Box>
@@ -1091,13 +1091,20 @@ const Admin = () => {
           variant="outlined"
           startIcon={<Logout />}
           onClick={handleLogout}
-          sx={{ color: '#8B4513', borderColor: '#8B4513' }}
+          sx={{ color: '#8B4513', borderColor: '#8B4513', fontSize: { xs: '0.85rem', md: '1rem' }, px: { xs: 1.5, md: 3 }, py: { xs: 0.5, md: 1 } }}
         >
           Logout
         </Button>
       </Box>
 
-      <Tabs value={activeTab} onChange={handleTabChange} sx={{ mb: 3 }}>
+      <Tabs
+        value={activeTab}
+        onChange={handleTabChange}
+        sx={{ mb: 3 }}
+        variant="scrollable"
+        scrollButtons="auto"
+        allowScrollButtonsMobile
+      >
         <Tab label="Dashboard" icon={<Dashboard />} />
         <Tab label="Orders" icon={<ShoppingCart />} />
         <Tab label="Products" icon={<Inventory />} />
