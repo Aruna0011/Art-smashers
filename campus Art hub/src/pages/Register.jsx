@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Box, Card, TextField, Button, Typography, Alert, InputAdornment, IconButton, Checkbox, FormControlLabel } from '@mui/material';
 import { Visibility, VisibilityOff, Person, Lock, Email } from '@mui/icons-material';
 import { useNavigate, Link } from 'react-router-dom';
-import { registerUser } from '../utils/userApi';
+import { signUp } from '../utils/supabaseAuth';
 
 const Register = () => {
   const navigate = useNavigate();

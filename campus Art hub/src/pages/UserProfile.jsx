@@ -50,7 +50,7 @@ import { useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
 import toast from 'react-hot-toast';
 import userService from '../utils/userService';
-import { orderStore } from '../utils/orderStore';
+import { getOrders } from '../utils/ordersApi';
 
 const UserProfile = () => {
   const navigate = useNavigate();
@@ -80,16 +80,15 @@ const UserProfile = () => {
   useEffect(() => {
     if (userData) {
       // Get all orders and filter for current user
-      const allOrders = orderStore.getAllOrders();
-      const userOrders = allOrders.filter(order => {
-        // Match by id or email (for robustness)
-        if (!order.customer) return false;
-        return (
-          (order.customer.id && order.customer.id === userData.id) ||
-          (order.customer.email && order.customer.email === userData.email)
-        );
-      });
-      setOrderHistory(userOrders);
+      const fetchOrders = async () => {
+        try {
+          const userOrders = await getOrders(userData.id);
+          setOrderHistory(userOrders);
+        } catch (error) {
+          toast.error('Failed to fetch order history: ' + error.message);
+        }
+      };
+      fetchOrders();
     }
   }, [userData]);
 

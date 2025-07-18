@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Container, Box, Card, CardContent, Typography, TextField, Button, Alert, CircularProgress } from '@mui/material';
-import userService from '../utils/userService';
+import { resetPassword } from '../utils/supabaseAuth';
 
 const ResetPassword = () => {
   const navigate = useNavigate();
@@ -40,7 +40,7 @@ const ResetPassword = () => {
     setLoading(true);
     try {
       // In a real app, verify token on backend. Here, just update password for the user.
-      const updated = userService.resetPassword(email, password);
+      const updated = await resetPassword(email, password, token);
       if (updated) {
         setSuccess('Password reset successful! You can now log in.');
         setTimeout(() => navigate('/login'), 2000);

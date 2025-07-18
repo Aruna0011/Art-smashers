@@ -1,12 +1,22 @@
-import React from 'react';
+import { getSession } from '../utils/supabaseAuth';
+import React, { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
-import userService from '../utils/userService';
 
 const UserProtectedRoute = ({ children }) => {
-  const user = userService.getCurrentUser();
-  if (!user) {
-    return <Navigate to="/register" replace />;
-  }
+  const [loading, setLoading] = useState(true);
+  const [session, setSession] = useState(null);
+
+  useEffect(() => {
+    async function checkSession() {
+      const sess = await getSession();
+      setSession(sess);
+      setLoading(false);
+    }
+    checkSession();
+  }, []);
+
+  if (loading) return null;
+  if (!session) return <Navigate to="/register" replace />;
   return children;
 };
 

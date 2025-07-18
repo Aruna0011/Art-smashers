@@ -58,6 +58,9 @@ import contactMessageStore from '../utils/contactMessageStore';
 import { getAllProducts, addProduct, updateProduct, deleteProduct } from '../utils/productApi';
 import { getAllCategories, addCategory, updateCategory, deleteCategory } from '../utils/categoryApi';
 import { getAllUsers, updateUser, deleteUser } from '../utils/userApi';
+import { getAllOrders, updateOrder } from '../utils/ordersApi';
+import { uploadProductImage } from '../utils/imageUpload';
+import { getSession } from '../utils/supabaseAuth';
 
 // Dynamically import all images from assets folder
 const imageModules = import.meta.glob('../assets/*', { eager: true });
@@ -223,58 +226,28 @@ const Admin = () => {
   // Add state for orders and load from orderStore:
   const [orders, setOrders] = useState([]);
   useEffect(() => {
-    const realOrders = orderStore.getAllOrders();
-    setOrders(realOrders);
-    console.log('Loaded orders:', realOrders);
-  }, []);
-  // Define recentOrders after orders is defined
-  const recentOrders = [...orders].sort((a, b) => new Date(b.placedAt) - new Date(a.placedAt)).slice(0, 5);
-
-  const [products, setProducts] = useState([]);
-  const [categories, setCategories] = useState([]);
-
-  // Add state for editing order
-  const [editingOrder, setEditingOrder] = useState(null);
-  const [editingOrderStatus, setEditingOrderStatus] = useState('pending');
-  const [openEditOrderDialog, setOpenEditOrderDialog] = useState(false);
-
-  // Dynamic dashboard stats
-  const uniqueClientEmails = Array.from(new Set(orders.map(order => order.customer && order.customer.email).filter(Boolean)));
-  const dashboardStats = {
-    totalClients: uniqueClientEmails.length,
-    totalOrders: orders.length,
-    totalProducts: products.length,
-    totalRevenue: orders.filter(order => order.status === 'delivered').reduce((sum, order) => sum + (order.total || 0), 0),
-    pendingOrders: orders.filter(order => order.status === 'pending' || !order.status).length,
-    deliveredOrders: orders.filter(order => order.status === 'delivered').length,
-  };
-
-  // Load products and categories from store
-  useEffect(() => {
-    const loadData = async () => {
-      const allProducts = await getAllProducts();
-      const allCategories = await getAllCategories();
-      console.log('Loading data - Products:', allProducts.length, 'Categories:', allCategories.length);
-      setProducts(allProducts);
-      setCategories(allCategories);
+    const loadOrders = async () => {
+      const allOrders = await getAllOrders();
+      setOrders(allOrders);
+      console.log('Loaded orders:', allOrders);
     };
     
-    loadData();
+    loadOrders();
     
     // Listen for updates
     const handleStorageChange = () => {
       console.log('Storage changed, reloading data');
-      loadData();
+      loadOrders();
     };
     
     const handleCategoriesUpdate = () => {
       console.log('Categories updated');
-      loadData();
+      loadOrders();
     };
     
     const handleProductsUpdate = () => {
       console.log('Products updated event received in admin');
-      loadData();
+      loadOrders();
     };
     
     window.addEventListener('storage', handleStorageChange);
@@ -291,7 +264,7 @@ const Admin = () => {
   // Update product counts when products change
   useEffect(() => {
     // No longer needed as product counts are managed by Supabase
-  }, [products]);
+  }, [orders]); // Changed from products to orders
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -562,8 +535,12 @@ const Admin = () => {
         reader.onload = (e) => resolve(e.target.result);
         reader.readAsDataURL(file);
       });
-    })).then(images => {
-      setNewProduct(prev => ({ ...prev, images: [...prev.images, ...images] }));
+    })).then(async images => {
+      const uploadedUrls = await Promise.all(images.map(async (imageUrl) => {
+        const url = await uploadProductImage(imageUrl);
+        return url;
+      }));
+      setNewProduct(prev => ({ ...prev, images: [...prev.images, ...uploadedUrls] }));
     });
   };
 
@@ -583,8 +560,12 @@ const Admin = () => {
         reader.onload = (e) => resolve(e.target.result);
         reader.readAsDataURL(file);
       });
-    })).then(images => {
-      setEditingProductData(prev => ({ ...prev, images: [...(prev.images || []), ...images] }));
+    })).then(async images => {
+      const uploadedUrls = await Promise.all(images.map(async (imageUrl) => {
+        const url = await uploadProductImage(imageUrl);
+        return url;
+      }));
+      setEditingProductData(prev => ({ ...prev, images: [...(prev.images || []), ...uploadedUrls] }));
     });
   };
 
@@ -606,25 +587,32 @@ const Admin = () => {
   };
 
   // Function to handle saving order status
-  const handleSaveOrderStatus = () => {
-    if (!editingOrder) return;
-    // Update order status in orderStore
-    const updatedOrders = orders.map(order =>
-      order.placedAt === editingOrder.placedAt ? { ...order, status: editingOrderStatus } : order
-    );
-    orderStore.orders = updatedOrders;
-    orderStore.saveToStorage();
-    setOrders([...updatedOrders]);
-    setOpenEditOrderDialog(false);
-    setEditingOrder(null);
+  const handleSaveOrderStatus = async (orderId, newStatus) => {
+    if (!orderId) return;
+    try {
+      const updatedOrder = await updateOrder(orderId, { status: newStatus });
+      if (updatedOrder) {
+        setOrders(orders.map(order => order.id === orderId ? updatedOrder : order));
+        toast.success('Order status updated successfully!');
+      } else {
+        toast.error('Failed to update order status');
+      }
+    } catch (e) {
+      toast.error('Error updating order status');
+    }
   };
 
   // Function to handle deleting an order
-  const handleDeleteOrder = (order) => {
-    const updatedOrders = orders.filter(o => o.placedAt !== order.placedAt);
-    orderStore.orders = updatedOrders;
-    orderStore.saveToStorage();
-    setOrders([...updatedOrders]);
+  const handleDeleteOrder = async (orderId) => {
+    if (window.confirm('Are you sure you want to delete this order?')) {
+      const success = await deleteOrder(orderId); // Assuming deleteOrder is in ordersApi.js
+      if (success) {
+        setOrders(orders.filter(order => order.id !== orderId));
+        toast.success('Order deleted successfully!');
+      } else {
+        toast.error('Failed to delete order');
+      }
+    }
   };
 
   const renderDashboard = () => (
@@ -635,7 +623,7 @@ const Admin = () => {
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
               <People sx={{ fontSize: 32, mr: 1 }} />
               <Box>
-                <Typography variant="h5">{dashboardStats.totalClients}</Typography>
+                <Typography variant="h5">{Array.from(new Set(orders.map(order => order.customer && order.customer.email).filter(Boolean))).length}</Typography>
                 <Typography variant="body2">Total Clients</Typography>
               </Box>
             </Box>
@@ -648,7 +636,7 @@ const Admin = () => {
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
               <ShoppingCart sx={{ fontSize: 32, mr: 1 }} />
               <Box>
-                <Typography variant="h5">{dashboardStats.totalOrders}</Typography>
+                <Typography variant="h5">{orders.length}</Typography>
                 <Typography variant="body2">Total Orders</Typography>
               </Box>
             </Box>
@@ -661,7 +649,7 @@ const Admin = () => {
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
               <AttachMoney sx={{ fontSize: 32, mr: 1 }} />
               <Box>
-                <Typography variant="h5">₹{dashboardStats.totalRevenue.toLocaleString()}</Typography>
+                <Typography variant="h5">₹{orders.filter(order => order.status === 'delivered').reduce((sum, order) => sum + (order.total || 0), 0).toLocaleString()}</Typography>
                 <Typography variant="body2">Total Revenue</Typography>
               </Box>
             </Box>
@@ -674,7 +662,7 @@ const Admin = () => {
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
               <Inventory sx={{ fontSize: 32, mr: 1 }} />
               <Box>
-                <Typography variant="h5">{dashboardStats.totalProducts}</Typography>
+                <Typography variant="h5">{products.length}</Typography>
                 <Typography variant="body2">Total Products</Typography>
               </Box>
             </Box>
@@ -724,7 +712,7 @@ const Admin = () => {
                 {orders.map((order, idx) => {
                   const user = users.find(u => u.email === (order.customer?.email || order.clientEmail));
                   return (
-                    <TableRow key={order.placedAt || idx}>
+                    <TableRow key={order.id || idx}>
                       <TableCell>{order.placedAt ? new Date(order.placedAt).toLocaleString() : '-'}</TableCell>
                       <TableCell>{order.customer ? `${order.customer.firstName} ${order.customer.lastName}` : '-'}</TableCell>
                       <TableCell>{order.customer ? order.customer.email : '-'}</TableCell>
@@ -753,7 +741,7 @@ const Admin = () => {
                         }}>
                           <Edit />
                         </IconButton>
-                        <IconButton onClick={() => handleDeleteOrder(order)} color="error">
+                        <IconButton onClick={() => handleDeleteOrder(order.id)} color="error">
                           <Delete />
                         </IconButton>
                       </TableCell>
@@ -1075,6 +1063,27 @@ const Admin = () => {
   // force re-render on refreshClients
   useEffect(() => {}, [refreshClients]);
 
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [loadingAdmin, setLoadingAdmin] = useState(true);
+
+  useEffect(() => {
+    async function checkAdmin() {
+      const session = await getSession();
+      if (session && session.user && session.user.user_metadata.is_admin) {
+        setIsAdmin(true);
+      } else {
+        setIsAdmin(false);
+      }
+      setLoadingAdmin(false);
+    }
+    checkAdmin();
+  }, []);
+
+  if (loadingAdmin) return null;
+  if (!isAdmin) {
+    return <div style={{ padding: 40, textAlign: 'center', color: 'red', fontWeight: 600, fontSize: 22 }}>Access denied. Admins only.</div>;
+  }
+
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 4 }}>
@@ -1131,8 +1140,8 @@ const Admin = () => {
                         </TableRow>
                       </TableHead>
                       <TableBody>
-                        {recentOrders.map((order, idx) => (
-                          <TableRow key={order.placedAt || idx}>
+                        {orders.sort((a, b) => new Date(b.placedAt) - new Date(a.placedAt)).slice(0, 5).map((order, idx) => (
+                          <TableRow key={order.id || idx}>
                             <TableCell>{order.placedAt ? new Date(order.placedAt).toLocaleString() : '-'}</TableCell>
                             <TableCell>{order.customer ? `${order.customer.firstName} ${order.customer.lastName}` : '-'}</TableCell>
                             <TableCell>₹{order.total ? order.total.toLocaleString() : '-'}</TableCell>
@@ -1156,16 +1165,16 @@ const Admin = () => {
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <Typography>Pending Orders</Typography>
-                      <Chip label={dashboardStats.pendingOrders} color="warning" />
+                      <Chip label={orders.filter(order => order.status === 'pending' || !order.status).length} color="warning" />
                     </Box>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <Typography>Delivered Orders</Typography>
-                      <Chip label={dashboardStats.deliveredOrders} color="success" />
+                      <Chip label={orders.filter(order => order.status === 'delivered').length} color="success" />
                     </Box>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <Typography>Total Revenue</Typography>
                       <Typography variant="h6" color="primary">
-                        ₹{dashboardStats.totalRevenue.toLocaleString()}
+                        ₹{orders.filter(order => order.status === 'delivered').reduce((sum, order) => sum + (order.total || 0), 0).toLocaleString()}
                       </Typography>
                     </Box>
                   </Box>
@@ -1237,10 +1246,10 @@ const Admin = () => {
               </Grid>
               <Grid item xs={12} md={6}>
                 <Typography variant="h6" gutterBottom>Order Information</Typography>
-                <Typography><strong>Order Date:</strong> {selectedOrder.orderDate}</Typography>
+                <Typography><strong>Order Date:</strong> {selectedOrder.placedAt ? new Date(selectedOrder.placedAt).toLocaleString() : '-'}</Typography>
                 <Typography><strong>Payment Method:</strong> {selectedOrder.paymentMethod}</Typography>
                 <Typography><strong>Status:</strong> 
-                  <Chip label={selectedOrder.status} color={getStatusColor(selectedOrder.status)} sx={{ ml: 1 }} />
+                  <Chip label={selectedOrder.status ? selectedOrder.status.charAt(0).toUpperCase() + selectedOrder.status.slice(1) : 'Pending'} color={selectedOrder.status === 'delivered' ? 'success' : selectedOrder.status === 'cancelled' ? 'error' : 'warning'} sx={{ ml: 1 }} />
                 </Typography>
               </Grid>
               <Grid item xs={12}>
@@ -1256,12 +1265,12 @@ const Admin = () => {
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      {selectedOrder.products.map((product, index) => (
+                      {selectedOrder.items.map((item, index) => (
                         <TableRow key={index}>
-                          <TableCell>{product.name}</TableCell>
-                          <TableCell>{product.quantity}</TableCell>
-                          <TableCell>₹{product.price}</TableCell>
-                          <TableCell>₹{product.price * product.quantity}</TableCell>
+                          <TableCell>{item.name}</TableCell>
+                          <TableCell>{item.quantity}</TableCell>
+                          <TableCell>₹{item.price}</TableCell>
+                          <TableCell>₹{item.price * item.quantity}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -1269,7 +1278,7 @@ const Admin = () => {
                 </TableContainer>
                 <Box sx={{ mt: 2, textAlign: 'right' }}>
                   <Typography variant="h6">
-                    Total Amount: ₹{selectedOrder.totalAmount.toLocaleString()}
+                    Total Amount: ₹{selectedOrder.total ? selectedOrder.total.toLocaleString() : '0'}
                   </Typography>
                 </Box>
               </Grid>
@@ -1369,7 +1378,13 @@ const Admin = () => {
                   <ImagePicker
                     images={assetImages}
                     selected={editingProductData.images || []}
-                    onSelect={imgs => setEditingProductData({ ...editingProductData, images: imgs })}
+                    onSelect={async imgs => {
+                      const uploadedUrls = await Promise.all(imgs.map(async (imageUrl) => {
+                        const url = await uploadProductImage(imageUrl);
+                        return url;
+                      }));
+                      setEditingProductData({ ...editingProductData, images: uploadedUrls });
+                    }}
                   />
                 </Box>
               </Grid>
@@ -1468,7 +1483,13 @@ const Admin = () => {
                 <ImagePicker
                   images={assetImages}
                   selected={newProduct.images}
-                  onSelect={imgs => setNewProduct({ ...newProduct, images: imgs })}
+                  onSelect={async imgs => {
+                    const uploadedUrls = await Promise.all(imgs.map(async (imageUrl) => {
+                      const url = await uploadProductImage(imageUrl);
+                      return url;
+                    }));
+                    setNewProduct({ ...newProduct, images: uploadedUrls });
+                  }}
                 />
               </Box>
             </Grid>
@@ -1520,7 +1541,13 @@ const Admin = () => {
                 <ImagePicker
                   images={assetImages}
                   selected={newCategory.image ? [newCategory.image] : []}
-                  onSelect={imgs => setNewCategory({ ...newCategory, image: imgs[0] || '' })}
+                  onSelect={async imgs => {
+                    const uploadedUrls = await Promise.all(imgs.map(async (imageUrl) => {
+                      const url = await uploadProductImage(imageUrl);
+                      return url;
+                    }));
+                    setNewCategory({ ...newCategory, image: uploadedUrls[0] || '' });
+                  }}
                 />
               </FormControl>
             </Grid>
@@ -1560,7 +1587,13 @@ const Admin = () => {
                 <ImagePicker
                   images={assetImages}
                   selected={editingCategoryData.image ? [editingCategoryData.image] : []}
-                  onSelect={imgs => setEditingCategoryData({ ...editingCategoryData, image: imgs[0] || '' })}
+                  onSelect={async imgs => {
+                    const uploadedUrls = await Promise.all(imgs.map(async (imageUrl) => {
+                      const url = await uploadProductImage(imageUrl);
+                      return url;
+                    }));
+                    setEditingCategoryData({ ...editingCategoryData, image: uploadedUrls[0] || '' });
+                  }}
                 />
               </FormControl>
             </Grid>
@@ -1591,7 +1624,7 @@ const Admin = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenEditOrderDialog(false)}>Cancel</Button>
-          <Button variant="contained" onClick={handleSaveOrderStatus}>Save</Button>
+          <Button variant="contained" onClick={() => handleSaveOrderStatus(editingOrder?.id, editingOrderStatus)}>Save</Button>
         </DialogActions>
       </Dialog>
 
