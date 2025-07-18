@@ -161,6 +161,13 @@ const Home = () => {
     return icons[categoryName] || <Palette />;
   };
 
+  // Helper to get the correct image src
+  const getImageSrc = (img) => {
+    if (!img) return '';
+    if (img.startsWith('data:') || img.startsWith('http')) return img;
+    return img.startsWith('/assets/') ? img : `/assets/${img}`;
+  };
+
   return (
     <Box>
       {/* Image Slideshow Hero Section */}
@@ -516,7 +523,7 @@ const Home = () => {
                     <Box sx={{ position: 'relative', overflow: 'hidden' }}>
                       <CardMedia
                         component="img"
-                        image={product.image && !product.image.startsWith('http') ? new URL(`../assets/${product.image}`, import.meta.url).href : product.image}
+                        image={getImageSrc(product.image)}
                         alt={product.name}
                         className="product-image"
                         sx={{
@@ -524,9 +531,9 @@ const Home = () => {
                           objectFit: 'contain',
                           objectPosition: 'center',
                           width: '100%',
-                          height: { xs: '120px', md: '200px' },
-                          minHeight: { xs: '120px', md: '200px' },
-                          maxHeight: { xs: '120px', md: '200px' },
+                          height: isMobile ? '120px' : '200px',
+                          minHeight: isMobile ? '120px' : '200px',
+                          maxHeight: isMobile ? '120px' : '200px',
                           backgroundColor: '#f5f5f5',
                         }}
                       />
