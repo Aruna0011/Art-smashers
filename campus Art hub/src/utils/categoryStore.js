@@ -1,22 +1,6 @@
 class CategoryStore {
   constructor() {
     this.storageKey = 'campusArtHub_categories';
-    this.initializeDefaultCategories();
-  }
-
-  initializeDefaultCategories() {
-    const existingCategories = this.getAllCategories();
-    if (existingCategories.length === 0) {
-      const defaultCategories = [
-        { id: 1, name: 'Painting', description: 'Canvas paintings and artworks', productCount: 0 },
-        { id: 2, name: 'Sculpture', description: '3D sculptures and installations', productCount: 0 },
-        { id: 3, name: 'Digital Art', description: 'Digital artwork and prints', productCount: 0 },
-        { id: 4, name: 'Photography', description: 'Photographic prints', productCount: 0 },
-        { id: 5, name: 'Pottery', description: 'Handcrafted pottery items', productCount: 0 },
-        { id: 6, name: 'Mixed Media', description: 'Combined art forms', productCount: 0 },
-      ];
-      this.saveCategories(defaultCategories);
-    }
   }
 
   getAllCategories() {

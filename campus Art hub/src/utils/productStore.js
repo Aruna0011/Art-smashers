@@ -2,7 +2,6 @@
 class ProductStore {
   constructor() {
     this.products = this.loadProducts();
-    this.initializeDefaultProducts();
   }
 
   loadProducts() {
@@ -31,84 +30,6 @@ class ProductStore {
     }
   }
 
-  initializeDefaultProducts() {
-    const existingProducts = this.getAllProducts();
-    if (existingProducts.length === 0) {
-      console.log('Initializing default products...');
-      const defaultProducts = [
-        {
-          id: 1,
-          name: 'Abstract Canvas Painting',
-          category: 'Painting',
-          price: 2500,
-          stock: 5,
-          description: 'Beautiful abstract painting with vibrant colors and modern design.',
-          image: '/assets/Art.jpg',
-          sold: 0,
-          status: 'active'
-        },
-        {
-          id: 2,
-          name: 'Handmade Pottery Vase',
-          category: 'Pottery',
-          price: 1200,
-          stock: 8,
-          description: 'Elegant handmade pottery vase perfect for home decoration.',
-          image: '/assets/handmade.jpg',
-          sold: 0,
-          status: 'active'
-        },
-        {
-          id: 3,
-          name: 'Digital Art Print',
-          category: 'Digital Art',
-          price: 800,
-          stock: 15,
-          description: 'High-quality digital art print with stunning visual effects.',
-          image: '/assets/design 2.jpg',
-          sold: 0,
-          status: 'active'
-        },
-        {
-          id: 4,
-          name: 'Sculptural Installation',
-          category: 'Sculpture',
-          price: 3500,
-          stock: 3,
-          description: 'Unique sculptural piece that adds character to any space.',
-          image: '/assets/design 3.jpg',
-          sold: 0,
-          status: 'active'
-        },
-        {
-          id: 5,
-          name: 'Nature Photography',
-          category: 'Photography',
-          price: 600,
-          stock: 12,
-          description: 'Captivating nature photography capturing the beauty of landscapes.',
-          image: '/assets/land1.jpg',
-          sold: 0,
-          status: 'active'
-        },
-        {
-          id: 6,
-          name: 'Mixed Media Artwork',
-          category: 'Mixed Media',
-          price: 1800,
-          stock: 6,
-          description: 'Innovative mixed media artwork combining various materials and techniques.',
-          image: '/assets/design 5.jpg',
-          sold: 0,
-          status: 'active'
-        }
-      ];
-      this.products = defaultProducts;
-      this.saveProducts();
-      console.log('Default products initialized:', defaultProducts.length);
-    }
-  }
-
   saveProducts() {
     if (!Array.isArray(this.products)) {
       console.warn('Attempting to save non-array to localStorage! Wrapping in array.', this.products);
@@ -127,9 +48,6 @@ class ProductStore {
   getAllProducts() {
     // Always reload from localStorage to get latest
     this.products = this.loadProducts();
-    if (!this.products || this.products.length === 0) {
-      this.initializeDefaultProducts();
-    }
     return this.products;
   }
 
@@ -181,9 +99,6 @@ class ProductStore {
 
   getProductById(id) {
     this.products = this.loadProducts();
-    if (!this.products || this.products.length === 0) {
-      this.initializeDefaultProducts();
-    }
     return this.products.find(p => p.id == id); // Use loose comparison
   }
 
@@ -205,7 +120,6 @@ class ProductStore {
   resetToDefaults() {
     localStorage.removeItem('artHubProducts');
     this.products = [];
-    this.initializeDefaultProducts();
     console.log('Reset to default products:', this.products.length);
     return this.products;
   }
