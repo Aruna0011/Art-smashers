@@ -40,8 +40,8 @@ import {
   FavoriteBorder,
 } from '@mui/icons-material';
 import { Link, useLocation } from 'react-router-dom';
-import { productStore } from '../utils/productStore';
-import { categoryStore } from '../utils/categoryStore';
+import { getAllProducts } from '../utils/productApi';
+import { getAllCategories } from '../utils/categoryApi';
 
 const Products = () => {
   const theme = useTheme();
@@ -57,9 +57,9 @@ const Products = () => {
 
   useEffect(() => {
     // Load products and categories from store
-    const loadData = () => {
-      const allProducts = productStore.getAllProducts();
-      const allCategories = categoryStore.getAllCategories();
+    const loadData = async () => {
+      const allProducts = await getAllProducts();
+      const allCategories = await getAllCategories();
       console.log('Products page: Loaded products:', allProducts.length, allProducts);
       console.log('Products page: Loaded categories:', allCategories.length, allCategories);
       setProducts(allProducts);
@@ -75,7 +75,7 @@ const Products = () => {
     };
     
     const handleCategoriesUpdate = () => {
-      setCategories(categoryStore.getAllCategories());
+      // This function is no longer needed as categories are fetched directly
     };
     
     const handleProductsUpdate = () => {

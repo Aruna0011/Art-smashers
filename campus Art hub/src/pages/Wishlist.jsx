@@ -2,30 +2,29 @@ import React, { useEffect, useState } from 'react';
 import { Box, Container, Typography, Grid, Card, CardContent, CardMedia, Button, IconButton } from '@mui/material';
 import { ShoppingCart, DeleteOutline, FavoriteBorder } from '@mui/icons-material';
 import { Link } from 'react-router-dom';
-
-const getWishlist = () => {
-  try {
-    return JSON.parse(localStorage.getItem('wishlist')) || [];
-  } catch {
-    return [];
-  }
-};
-
-const setWishlist = (items) => {
-  localStorage.setItem('wishlist', JSON.stringify(items));
-};
+import { getWishlist, addToWishlist, removeFromWishlist } from '../utils/wishlistApi';
 
 const Wishlist = () => {
   const [wishlist, setWishlistState] = useState([]);
 
   useEffect(() => {
-    setWishlistState(getWishlist());
+    const fetchWishlist = async () => {
+      const user = JSON.parse(localStorage.getItem('user'));
+      if (user) {
+        const items = await getWishlist(user.id);
+        setWishlistState(items);
+      }
+    };
+    fetchWishlist();
   }, []);
 
-  const handleRemove = (id) => {
-    const updated = wishlist.filter(item => item.id !== id);
-    setWishlist(updated);
-    setWishlistState(updated);
+  const handleRemove = async (id) => {
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (user) {
+      await removeFromWishlist(user.id, id);
+      const updated = wishlist.filter(item => item.id !== id);
+      setWishlistState(updated);
+    }
   };
 
   const handleAddToCart = (item) => {

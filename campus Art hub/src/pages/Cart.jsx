@@ -26,9 +26,9 @@ import {
 } from '@mui/icons-material';
 import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { cartStore } from '../utils/cartStore';
 import { productStore } from '../utils/productStore';
 import userService from '../utils/userService';
+import { getCart, addToCart, updateCartItem, removeFromCart, clearCart } from '../utils/cartApi';
 
 const Cart = () => {
   const navigate = useNavigate();
@@ -36,13 +36,13 @@ const Cart = () => {
 
   useEffect(() => {
     // Always sync cart items with latest product stock
-    const items = cartStore.loadFromStorage();
+    const items = getCart();
     // For each item, if quantity > product stock, reduce to stock
     const updatedItems = items.map(item => {
       const product = productStore.getProductById(item.id);
       const stock = product ? product.stock : 1;
       if (item.quantity > stock) {
-        cartStore.updateQuantity(item.id, stock);
+        updateCartItem(item.id, stock);
         return { ...item, quantity: stock };
       }
       return item;
@@ -56,16 +56,16 @@ const Cart = () => {
         const product = productStore.getProductById(item.id);
         const stock = product ? product.stock : 1;
         if (item.quantity > stock) {
-          cartStore.updateQuantity(item.id, stock);
+          updateCartItem(item.id, stock);
           return { ...item, quantity: stock };
         }
         return item;
       });
       setCartItems(updated);
     };
-    cartStore.addListener(handleCartUpdate);
+    // No need to add listener here as getCart is a one-time fetch
     return () => {
-      cartStore.removeListener(handleCartUpdate);
+      // No need to remove listener here
     };
   }, []);
 
@@ -75,11 +75,11 @@ const Cart = () => {
     const stock = product ? product.stock : 1;
     if (newQuantity < 1) return;
     if (newQuantity > stock) return;
-    cartStore.updateQuantity(id, newQuantity);
+    updateCartItem(id, newQuantity);
   };
 
   const removeItem = (id) => {
-    cartStore.removeFromCart(id);
+    removeFromCart(id);
     toast.success('Item removed from cart');
   };
 
@@ -87,7 +87,7 @@ const Cart = () => {
   const isCampusStudent = currentUser && currentUser.isCampusStudent;
 
   // Calculate discounted subtotal if campus student
-  const subtotal = cartStore.getTotal();
+  const subtotal = getCart().reduce((sum, item) => sum + item.price * item.quantity, 0);
   const discount = isCampusStudent ? Math.round(subtotal * 0.10) : 0;
   const discountedSubtotal = subtotal - discount;
   const deliveryFee = subtotal > 0 ? 0 : 0; // Free delivery

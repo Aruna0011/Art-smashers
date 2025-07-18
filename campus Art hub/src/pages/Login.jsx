@@ -3,7 +3,7 @@ import { Box, Card, CardContent, TextField, Button, Typography, Alert, InputAdor
 import { Visibility, VisibilityOff, Person, Lock, Email } from '@mui/icons-material';
 import { useNavigate, Link } from 'react-router-dom';
 import emailService from '../utils/emailService';
-import userService from '../utils/userService';
+import { loginUser } from '../utils/userApi';
 import logo from '../assets/logo.png';
 
 const Login = () => {
@@ -22,7 +22,7 @@ const Login = () => {
     setError('');
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.email || !formData.password) {
       setError('Please fill in all fields');
@@ -31,15 +31,20 @@ const Login = () => {
     const trimmedEmail = formData.email.trim();
     const trimmedPassword = formData.password.trim();
     try {
-      const user = userService.loginUser(trimmedEmail, trimmedPassword);
+      const user = await loginUser(trimmedEmail, trimmedPassword);
       setError('');
-      setTimeout(() => {
-        if (user.isAdmin) {
-          navigate('/admin');
-        } else {
-          navigate('/profile');
-        }
-      }, 1000);
+      if (user) {
+        localStorage.setItem('art_hub_current_user', JSON.stringify(user));
+        setTimeout(() => {
+          if (user.isAdmin) {
+            navigate('/admin');
+          } else {
+            navigate('/profile');
+          }
+        }, 1000);
+      } else {
+        setError('Invalid email or password. Please try again.');
+      }
     } catch (error) {
       setError(error.message);
     }

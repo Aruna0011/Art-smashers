@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Box, Card, TextField, Button, Typography, Alert, InputAdornment, IconButton, Checkbox, FormControlLabel } from '@mui/material';
 import { Visibility, VisibilityOff, Person, Lock, Email } from '@mui/icons-material';
 import { useNavigate, Link } from 'react-router-dom';
-import userService from '../utils/userService';
+import { registerUser } from '../utils/userApi';
 
 const Register = () => {
   const navigate = useNavigate();
@@ -16,7 +16,7 @@ const Register = () => {
     setError('');
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.name || !formData.email || !formData.password) {
       setError('Please fill in all required fields');
@@ -39,7 +39,7 @@ const Register = () => {
         address: 'Address not provided',
         isCampusStudent: isCampusStudent
       };
-      const newUser = userService.registerUser(userData);
+      await registerUser(userData);
       setError('');
       setTimeout(() => {
         navigate('/profile');

@@ -51,11 +51,13 @@ import {
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { productStore } from '../utils/productStore';
-import { categoryStore } from '../utils/categoryStore';
 import { orderStore } from '../utils/orderStore';
 import ImagePicker from '../components/ImagePicker';
 import userService from '../utils/userService';
 import contactMessageStore from '../utils/contactMessageStore';
+import { getAllProducts, addProduct, updateProduct, deleteProduct } from '../utils/productApi';
+import { getAllCategories, addCategory, updateCategory, deleteCategory } from '../utils/categoryApi';
+import { getAllUsers, updateUser, deleteUser } from '../utils/userApi';
 
 // Dynamically import all images from assets folder
 const imageModules = import.meta.glob('../assets/*', { eager: true });
@@ -249,9 +251,9 @@ const Admin = () => {
 
   // Load products and categories from store
   useEffect(() => {
-    const loadData = () => {
-      const allProducts = productStore.getAllProducts();
-      const allCategories = categoryStore.getAllCategories();
+    const loadData = async () => {
+      const allProducts = await getAllProducts();
+      const allCategories = await getAllCategories();
       console.log('Loading data - Products:', allProducts.length, 'Categories:', allCategories.length);
       setProducts(allProducts);
       setCategories(allCategories);
@@ -267,7 +269,7 @@ const Admin = () => {
     
     const handleCategoriesUpdate = () => {
       console.log('Categories updated');
-      setCategories(categoryStore.getAllCategories());
+      loadData();
     };
     
     const handleProductsUpdate = () => {
@@ -288,7 +290,7 @@ const Admin = () => {
 
   // Update product counts when products change
   useEffect(() => {
-    categoryStore.updateProductCounts(products);
+    // No longer needed as product counts are managed by Supabase
   }, [products]);
 
   const getStatusColor = (status) => {
@@ -334,12 +336,11 @@ const Admin = () => {
     setOpenAddProductDialog(true);
   };
 
-  const handleDeleteProduct = (productId) => {
+  const handleDeleteProduct = async (productId) => {
     if (window.confirm('Are you sure you want to delete this product?')) {
-      const success = productStore.deleteProduct(productId);
+      const success = await deleteProduct(productId);
       if (success) {
-        productStore.reloadFromStorage();
-        setProducts(productStore.getAllProducts());
+        setProducts(await getAllProducts());
         toast.success('Product deleted successfully!');
       } else {
         toast.error('Failed to delete product');
@@ -347,7 +348,7 @@ const Admin = () => {
     }
   };
 
-  const handleSaveProduct = () => {
+  const handleSaveProduct = async () => {
     // Validate required fields
     if (!editingProductData.name || !editingProductData.category || !editingProductData.price || !editingProductData.stock) {
       toast.error('Please fill in all required fields');
@@ -355,7 +356,7 @@ const Admin = () => {
     }
 
     // Update product in store
-    const success = productStore.updateProduct(editingProduct.id, {
+    const success = await updateProduct(editingProduct.id, {
       ...editingProductData,
       price: Number(editingProductData.price),
       stock: Number(editingProductData.stock),
@@ -363,8 +364,7 @@ const Admin = () => {
     });
     
     if (success) {
-      productStore.reloadFromStorage();
-      setProducts(productStore.getAllProducts());
+      setProducts(await getAllProducts());
       toast.success('Product updated successfully!');
       setOpenEditProductDialog(false);
       setEditingProduct(null);
@@ -374,7 +374,7 @@ const Admin = () => {
     }
   };
 
-  const handleAddNewProduct = () => {
+  const handleAddNewProduct = async () => {
     console.log('Adding new product:', newProduct); // Debug log
     
     // Validate required fields
@@ -399,13 +399,12 @@ const Admin = () => {
     console.log('Prepared product data:', productData);
 
     // Add product to store
-    const addedProduct = productStore.addProduct(productData);
+    const addedProduct = await addProduct(productData);
 
     console.log('Product added result:', addedProduct);
 
     if (addedProduct) {
-      productStore.reloadFromStorage();
-      setProducts(productStore.getAllProducts()); // Always refresh
+      setProducts(await getAllProducts()); // Always refresh
       toast.success('Product added successfully!');
       setOpenAddProductDialog(false);
       setNewProduct({
@@ -455,10 +454,9 @@ const Admin = () => {
     setOpenEditCategoryDialog(true);
   };
 
-  const handleDeleteCategory = (categoryId) => {
+  const handleDeleteCategory = async (categoryId) => {
     // Check if category has products
-    const category = categories.find(cat => cat.id === categoryId);
-    const productsInCategory = products.filter(product => product.category === category?.name);
+    const productsInCategory = products.filter(product => product.category === (await getAllCategories()).find(cat => cat.id === categoryId)?.name);
     
     if (productsInCategory.length > 0) {
       toast.error(`Cannot delete category. It has ${productsInCategory.length} products. Please reassign or delete products first.`);
@@ -466,9 +464,9 @@ const Admin = () => {
     }
 
     if (window.confirm('Are you sure you want to delete this category?')) {
-      const success = categoryStore.deleteCategory(categoryId);
+      const success = await deleteCategory(categoryId);
       if (success) {
-        setCategories(categoryStore.getAllCategories());
+        setCategories(await getAllCategories());
         toast.success('Category deleted successfully!');
       } else {
         toast.error('Failed to delete category');
@@ -476,14 +474,14 @@ const Admin = () => {
     }
   };
 
-  const handleSaveCategory = () => {
+  const handleSaveCategory = async () => {
     if (!editingCategoryData.name.trim()) {
       toast.error('Category name is required');
       return;
     }
 
     // Check if name already exists (excluding current category)
-    const nameExists = categories.some(cat => 
+    const nameExists = (await getAllCategories()).some(cat => 
       cat.name.toLowerCase() === editingCategoryData.name.toLowerCase() && cat.id !== editingCategory.id
     );
 
@@ -493,7 +491,7 @@ const Admin = () => {
     }
 
     // Update category in store
-    const updatedCategory = categoryStore.updateCategory(editingCategory.id, editingCategoryData);
+    const updatedCategory = await updateCategory(editingCategory.id, editingCategoryData);
     
     if (updatedCategory) {
       // Update products that use this category
@@ -509,7 +507,7 @@ const Admin = () => {
       });
 
       setProducts(productStore.getAllProducts());
-      setCategories(categoryStore.getAllCategories());
+      setCategories(await getAllCategories());
       toast.success('Category updated successfully!');
       setOpenEditCategoryDialog(false);
       setEditingCategory(null);
@@ -519,14 +517,14 @@ const Admin = () => {
     }
   };
 
-  const handleAddNewCategory = () => {
+  const handleAddNewCategory = async () => {
     if (!newCategory.name.trim()) {
       toast.error('Category name is required');
       return;
     }
 
     // Check if name already exists
-    const nameExists = categories.some(cat => 
+    const nameExists = (await getAllCategories()).some(cat => 
       cat.name.toLowerCase() === newCategory.name.toLowerCase()
     );
 
@@ -535,14 +533,14 @@ const Admin = () => {
       return;
     }
 
-    const addedCategory = categoryStore.addCategory({
+    const addedCategory = await addCategory({
       name: newCategory.name,
       description: newCategory.description,
       image: newCategory.image || '',
     });
 
     if (addedCategory) {
-      setCategories(categoryStore.getAllCategories());
+      setCategories(await getAllCategories());
       toast.success('Category added successfully!');
       setOpenCategoryDialog(false);
       setNewCategory({ name: '', description: '', image: '' });
@@ -778,10 +776,10 @@ const Admin = () => {
           <Box sx={{ display: 'flex', gap: 1 }}>
             <Button 
               variant="outlined" 
-              onClick={() => {
-                const refreshedProducts = productStore.reloadFromStorage();
+              onClick={async () => {
+                const refreshedProducts = await getAllProducts();
                 setProducts(refreshedProducts);
-                setCategories(categoryStore.getAllCategories());
+                setCategories(await getAllCategories());
                 toast.success(`Data refreshed! Found ${refreshedProducts.length} products`);
               }}
             >
@@ -837,7 +835,7 @@ const Admin = () => {
                       </IconButton>
                       <IconButton onClick={() => {
                         handleDeleteProduct(product.id);
-                        setProducts(productStore.getAllProducts());
+                        setProducts(await getAllProducts());
                       }}>
                         <Delete />
                       </IconButton>
@@ -860,8 +858,8 @@ const Admin = () => {
           <Box sx={{ display: 'flex', gap: 1 }}>
             <Button 
               variant="outlined" 
-              onClick={() => {
-                setCategories(categoryStore.getAllCategories());
+              onClick={async () => {
+                setCategories(await getAllCategories());
                 toast.success('Categories refreshed!');
               }}
             >
@@ -1053,9 +1051,9 @@ const Admin = () => {
     setEditDialogOpen(true);
   };
 
-  const handleSaveUser = () => {
+  const handleSaveUser = async () => {
     try {
-      userService.updateUserProfile(editingUser.id, editingUserData);
+      await updateUser(editingUser.id, editingUserData);
       setEditDialogOpen(false);
       setEditingUser(null);
       setEditingUserData({});
@@ -1066,10 +1064,9 @@ const Admin = () => {
     }
   };
 
-  const handleDeleteUser = (user) => {
+  const handleDeleteUser = async (user) => {
     if (window.confirm('Are you sure you want to delete this client?')) {
-      const users = userService.getAllUsers().filter(u => u.id !== user.id);
-      localStorage.setItem('art_hub_users', JSON.stringify(users));
+      await deleteUser(user.id);
       setRefreshClients(r => r + 1);
       toast.success('Client deleted successfully!');
     }
