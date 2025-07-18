@@ -43,7 +43,7 @@ class ProductStore {
           price: 2500,
           stock: 5,
           description: 'Beautiful abstract painting with vibrant colors and modern design.',
-          image: 'Art.jpg',
+          image: '/assets/Art.jpg',
           sold: 0,
           status: 'active'
         },
@@ -54,7 +54,7 @@ class ProductStore {
           price: 1200,
           stock: 8,
           description: 'Elegant handmade pottery vase perfect for home decoration.',
-          image: 'handmade.jpg',
+          image: '/assets/handmade.jpg',
           sold: 0,
           status: 'active'
         },
@@ -65,7 +65,7 @@ class ProductStore {
           price: 800,
           stock: 15,
           description: 'High-quality digital art print with stunning visual effects.',
-          image: 'design 2.jpg',
+          image: '/assets/design 2.jpg',
           sold: 0,
           status: 'active'
         },
@@ -76,7 +76,7 @@ class ProductStore {
           price: 3500,
           stock: 3,
           description: 'Unique sculptural piece that adds character to any space.',
-          image: 'design 3.jpg',
+          image: '/assets/design 3.jpg',
           sold: 0,
           status: 'active'
         },
@@ -87,7 +87,7 @@ class ProductStore {
           price: 600,
           stock: 12,
           description: 'Captivating nature photography capturing the beauty of landscapes.',
-          image: 'land1.jpg',
+          image: '/assets/land1.jpg',
           sold: 0,
           status: 'active'
         },
@@ -98,12 +98,11 @@ class ProductStore {
           price: 1800,
           stock: 6,
           description: 'Innovative mixed media artwork combining various materials and techniques.',
-          image: 'design 5.jpg',
+          image: '/assets/design 5.jpg',
           sold: 0,
           status: 'active'
         }
       ];
-      
       this.products = defaultProducts;
       this.saveProducts();
       console.log('Default products initialized:', defaultProducts.length);
@@ -126,6 +125,11 @@ class ProductStore {
   }
 
   getAllProducts() {
+    // Always reload from localStorage to get latest
+    this.products = this.loadProducts();
+    if (!this.products || this.products.length === 0) {
+      this.initializeDefaultProducts();
+    }
     return this.products;
   }
 
@@ -176,6 +180,10 @@ class ProductStore {
   }
 
   getProductById(id) {
+    this.products = this.loadProducts();
+    if (!this.products || this.products.length === 0) {
+      this.initializeDefaultProducts();
+    }
     return this.products.find(p => p.id == id); // Use loose comparison
   }
 
