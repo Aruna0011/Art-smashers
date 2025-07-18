@@ -29,8 +29,8 @@ import {
   NavigateNext,
 } from '@mui/icons-material';
 import { Link } from 'react-router-dom';
-import { categoryStore } from '../utils/categoryStore';
-import { productStore } from '../utils/productStore';
+import { getAllProducts } from '../utils/productApi';
+import { getAllCategories } from '../utils/categoryApi';
 import { useRef } from 'react';
 
 const Home = () => {
@@ -124,29 +124,14 @@ const Home = () => {
   };
 
   useEffect(() => {
-    const loadData = () => {
-      const allCategories = categoryStore.getAllCategories();
-      const allProducts = productStore.getAllProducts();
+    const loadData = async () => {
+      const allCategories = await getAllCategories();
+      const allProducts = await getAllProducts();
       setCategories(allCategories);
       const featured = allProducts.slice(0, 4);
       setFeaturedProducts(featured);
-      // Debug log for featured products and their IDs
-      console.log('Featured Products:', featured.map(p => ({ id: p.id, name: p.name })));
     };
     loadData();
-    const handleCategoriesUpdate = () => {
-      setCategories(categoryStore.getAllCategories());
-    };
-    const handleProductsUpdate = () => {
-      const allProducts = productStore.getAllProducts();
-      setFeaturedProducts(allProducts.slice(0, 4));
-    };
-    window.addEventListener('categoriesUpdated', handleCategoriesUpdate);
-    window.addEventListener('productsUpdated', handleProductsUpdate);
-    return () => {
-      window.removeEventListener('categoriesUpdated', handleCategoriesUpdate);
-      window.removeEventListener('productsUpdated', handleProductsUpdate);
-    };
   }, []);
 
   const getCategoryIcon = (categoryName) => {
