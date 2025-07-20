@@ -19,49 +19,52 @@ import {
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { supabase } from '../utils/supabaseClient';
+
+const ADMIN_EMAIL = 'arunaarya0011@gmail.com'; // Set to your actual admin email
 
 const AdminLogin = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    username: '',
+    email: '',
     password: '',
   });
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
 
-  // Admin credentials (in real app, this would be in backend)
-  const ADMIN_CREDENTIALS = {
-    username: 'admin',
-    password: 'admin123',
-  };
-  
   const handleInputChange = (e) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value,
     });
-    setError(''); // Clear error when user types
+    setError('');
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (!formData.username || !formData.password) {
+    if (!formData.email || !formData.password) {
       setError('Please fill in all fields');
       return;
     }
-
-    // Check credentials
-    if (formData.username === ADMIN_CREDENTIALS.username && 
-        formData.password === ADMIN_CREDENTIALS.password) {
-      // Store admin session (in real app, use JWT tokens)
-      localStorage.setItem('adminAuthenticated', 'true');
-      localStorage.setItem('adminUsername', formData.username);
+    // Supabase Auth login
+    const { data, error: supaError } = await supabase.auth.signInWithPassword({
+      email: formData.email,
+      password: formData.password,
+    });
+    if (supaError) {
+      setError('Login failed. Please check your credentials.');
+      toast.error('Login failed. Please check your credentials.');
+      return;
+    }
+    // Check if the email matches the admin email
+    if (formData.email === ADMIN_EMAIL) {
       toast.success('Login successful! Welcome to Admin Panel');
       navigate('/admin');
     } else {
-      setError('Invalid username or password');
-      toast.error('Login failed. Please check your credentials.');
+      setError('You are not authorized to access the admin panel.');
+      toast.error('You are not authorized to access the admin panel.');
+      // Optionally, sign out the user
+      await supabase.auth.signOut();
     }
   };
 
@@ -112,13 +115,13 @@ const AdminLogin = () => {
           <Box component="form" onSubmit={handleSubmit} sx={{ width: '100%' }}>
             <TextField
               fullWidth
-              label="Username"
-              name="username"
-              value={formData.username}
+              label="Email"
+              name="email"
+              value={formData.email}
               onChange={handleInputChange}
               margin="normal"
               required
-              autoComplete="username"
+              autoComplete="email"
               sx={{ mb: 2 }}
               InputProps={{
                 startAdornment: (

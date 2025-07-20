@@ -50,11 +50,6 @@ import {
   Image,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import { productStore } from '../utils/productStore';
-import { orderStore } from '../utils/orderStore';
-import ImagePicker from '../components/ImagePicker';
-import userService from '../utils/userService';
-import contactMessageStore from '../utils/contactMessageStore';
 import { getAllProducts, addProduct, updateProduct, deleteProduct } from '../utils/productApi';
 import { getAllCategories, addCategory, updateCategory, deleteCategory } from '../utils/categoryApi';
 import { getAllUsers, updateUser, deleteUser } from '../utils/userApi';
@@ -171,98 +166,91 @@ const Admin = () => {
   }, []);
 
   // Handlers for dropdown selection
-  const handleSelectImage = (type, idx, value) => {
-    let updated;
-    if (type === 'carousel') {
-      updated = [...carouselImages];
-      updated[idx] = value;
-      setCarouselImages(updated);
-      // localStorage.setItem('carouselImages', JSON.stringify(updated)); // Removed
-    } else if (type === 'wall') {
-      updated = [...wallImages];
-      updated[idx] = value;
-      setWallImages(updated);
-      // localStorage.setItem('wallImages', JSON.stringify(updated)); // Removed
-    } else if (type === 'offer') {
-      updated = [...offerImages];
-      updated[idx] = value;
-      setOfferImages(updated);
-      // localStorage.setItem('offerImages', JSON.stringify(updated)); // Removed
+  // Update handleSelectImage to update image in Supabase
+  const handleSelectImage = async (type, idx, value) => {
+    let images = type === 'carousel' ? carouselImages : type === 'wall' ? wallImages : offerImages;
+    const imageToUpdate = images[idx];
+    if (imageToUpdate && imageToUpdate.id) {
+      try {
+        await updateImage(imageToUpdate.id, { image: value });
+        toast.success('Image updated!');
+      } catch (error) {
+        toast.error('Failed to update image: ' + (error.message || error));
+      }
     }
   };
-  const handleAddImageSlot = (type) => {
-    if (type === 'carousel') {
-      setCarouselImages([...carouselImages, assetImages[0]]);
-      // localStorage.setItem('carouselImages', JSON.stringify([...carouselImages, assetImages[0]])); // Removed
-    } else if (type === 'wall') {
-      setWallImages([...wallImages, assetImages[0]]);
-      // localStorage.setItem('wallImages', JSON.stringify([...wallImages, assetImages[0]])); // Removed
-    } else if (type === 'offer') {
-      setOfferImages([...offerImages, assetImages[0]]);
-      // localStorage.setItem('offerImages', JSON.stringify([...offerImages, assetImages[0]])); // Removed
+  // Add these helper functions for image CRUD
+  const addImage = async (imageData) => {
+    const { error } = await supabase.from('images').insert([imageData]);
+    if (error) throw error;
+  };
+  const updateImage = async (id, updates) => {
+    const { error } = await supabase.from('images').update(updates).eq('id', id);
+    if (error) throw error;
+  };
+  const deleteImage = async (id) => {
+    const { error } = await supabase.from('images').delete().eq('id', id);
+    if (error) throw error;
+  };
+  // Update handleAddImageSlot to insert a new image in Supabase
+  const handleAddImageSlot = async (type) => {
+    try {
+      const defaultImage = assetImages[0];
+      await addImage({ type, image: defaultImage, label: '', description: '', order: 0 });
+      toast.success('Image added!');
+    } catch (error) {
+      toast.error('Failed to add image: ' + (error.message || error));
     }
   };
-  const handleRemoveImageSlot = (type, idx) => {
-    if (type === 'carousel') {
-      const updated = carouselImages.filter((_, i) => i !== idx);
-      setCarouselImages(updated);
-      // localStorage.setItem('carouselImages', JSON.stringify(updated)); // Removed
-    } else if (type === 'wall') {
-      const updated = wallImages.filter((_, i) => i !== idx);
-      setWallImages(updated);
-      // localStorage.setItem('wallImages', JSON.stringify(updated)); // Removed
-    } else if (type === 'offer') {
-      const updated = offerImages.filter((_, i) => i !== idx);
-      setOfferImages(updated);
-      // localStorage.setItem('offerImages', JSON.stringify(updated)); // Removed
+  // Update handleRemoveImageSlot to delete image from Supabase
+  const handleRemoveImageSlot = async (type, idx) => {
+    try {
+      const images = type === 'carousel' ? carouselImages : type === 'wall' ? wallImages : offerImages;
+      const imageToDelete = images[idx];
+      if (imageToDelete && imageToDelete.id) {
+        await deleteImage(imageToDelete.id);
+        toast.success('Image deleted!');
+      }
+    } catch (error) {
+      toast.error('Failed to delete image: ' + (error.message || error));
     }
   };
-
-  // Update handlers for links and section text
-  const handleLinkChange = (type, idx, value) => {
-    let updated;
-    if (type === 'carousel') {
-      updated = [...carouselLinks];
-      updated[idx] = value;
-      setCarouselLinks(updated);
-      // localStorage.setItem('carouselLinks', JSON.stringify(updated)); // Removed
-    } else if (type === 'wall') {
-      updated = [...wallLinks];
-      updated[idx] = value;
-      setWallLinks(updated);
-      // localStorage.setItem('wallLinks', JSON.stringify(updated)); // Removed
-    } else if (type === 'offer') {
-      updated = [...offerLinks];
-      updated[idx] = value;
-      setOfferLinks(updated);
-      // localStorage.setItem('offerLinks', JSON.stringify(updated)); // Removed
+  // Update handleLabelChange, handleLinkChange, handleSectionTextChange to update image in Supabase
+  const handleLabelChange = async (type, idx, value) => {
+    try {
+      const images = type === 'wall' ? wallImages : offerImages;
+      const imageToUpdate = images[idx];
+      if (imageToUpdate && imageToUpdate.id) {
+        await updateImage(imageToUpdate.id, { label: value });
+        toast.success('Label updated!');
+      }
+    } catch (error) {
+      toast.error('Failed to update label: ' + (error.message || error));
     }
   };
-  const handleSectionTextChange = (type, value) => {
-    if (type === 'carousel') {
-      setCarouselText(value);
-      // localStorage.setItem('carouselText', value); // Removed
-    } else if (type === 'wall') {
-      setWallText(value);
-      // localStorage.setItem('wallText', value); // Removed
-    } else if (type === 'offer') {
-      setOfferText(value);
-      // localStorage.setItem('offerText', value); // Removed
+  const handleLinkChange = async (type, idx, value) => {
+    try {
+      const images = type === 'carousel' ? carouselImages : type === 'wall' ? wallImages : offerImages;
+      const imageToUpdate = images[idx];
+      if (imageToUpdate && imageToUpdate.id) {
+        await updateImage(imageToUpdate.id, { link: value });
+        toast.success('Link updated!');
+      }
+    } catch (error) {
+      toast.error('Failed to update link: ' + (error.message || error));
     }
   };
-
-  // Add handler for label change
-  const handleLabelChange = (type, idx, value) => {
-    if (type === 'wall') {
-      const updated = [...wallLabels];
-      updated[idx] = value;
-      setWallLabels(updated);
-      // localStorage.setItem('wallLabels', JSON.stringify(updated)); // Removed
-    } else if (type === 'offer') {
-      const updated = [...offerLabels];
-      updated[idx] = value;
-      setOfferLabels(updated);
-      // localStorage.setItem('offerLabels', JSON.stringify(updated)); // Removed
+  const handleSectionTextChange = async (type, value) => {
+    try {
+      // Update all images of this type with the new section text
+      const images = type === 'carousel' ? carouselImages : type === 'wall' ? wallImages : offerImages;
+      await Promise.all(images.map(img => img.id && updateImage(img.id, { text: value })));
+      if (type === 'carousel') setCarouselText(value);
+      if (type === 'wall') setWallText(value);
+      if (type === 'offer') setOfferText(value);
+      toast.success('Section text updated!');
+    } catch (error) {
+      toast.error('Failed to update section text: ' + (error.message || error));
     }
   };
 
@@ -358,7 +346,6 @@ const Admin = () => {
       try {
         const success = await deleteProduct(productId);
         if (success) {
-          setProducts(await getAllProducts());
           toast.success('Product deleted successfully!');
         } else {
           toast.error('Failed to delete product');
@@ -387,7 +374,6 @@ const Admin = () => {
       });
       
       if (success) {
-        setProducts(await getAllProducts());
         toast.success('Product updated successfully!');
         setOpenEditProductDialog(false);
         setEditingProduct(null);
@@ -415,7 +401,6 @@ const Admin = () => {
       };
       const addedProduct = await addProduct(productData);
       if (addedProduct) {
-        setProducts(await getAllProducts());
         toast.success('Product added successfully!');
         setOpenAddProductDialog(false);
         setNewProduct({ name: '', category: '', price: '', stock: '', description: '', images: [] });
@@ -474,7 +459,6 @@ const Admin = () => {
       try {
         const success = await deleteCategory(categoryId);
         if (success) {
-          setCategories(await getAllCategories());
           toast.success('Category deleted successfully!');
         } else {
           toast.error('Failed to delete category');
@@ -512,8 +496,6 @@ const Admin = () => {
         await Promise.all(updatedProducts.map(product =>
           supabase.from('products').update({ category: editingCategoryData.name }).eq('id', product.id)
         ));
-        setProducts(await getAllProducts());
-        setCategories(await getAllCategories());
         toast.success('Category updated successfully!');
         setOpenEditCategoryDialog(false);
         setEditingCategory(null);
@@ -551,7 +533,6 @@ const Admin = () => {
       });
 
       if (addedCategory) {
-        setCategories(await getAllCategories());
         toast.success('Category added successfully!');
         setOpenCategoryDialog(false);
         setNewCategory({ name: '', description: '', image: '' });
@@ -618,12 +599,12 @@ const Admin = () => {
   // Add this function to reset products
   const handleResetProducts = () => {
     if (window.confirm('Are you sure you want to reset all products to default? This will remove all custom products.')) {
-      productStore.resetToDefaults();
+      // productStore.resetToDefaults(); // Removed
       // Reload products after reset
       setTimeout(() => {
-        const allProducts = productStore.getAllProducts();
-        setProducts(allProducts);
-        toast.success(`Products reset to default! Found ${allProducts.length} default products.`);
+        // const allProducts = productStore.getAllProducts(); // Removed
+        // setProducts(allProducts);
+        toast.success(`Products reset to default! Found ${products.length} default products.`); // Assuming products state holds default products
       }, 100);
     }
   };
@@ -868,9 +849,8 @@ const Admin = () => {
                       <IconButton onClick={() => handleEditProduct(product)}>
                         <Edit />
                       </IconButton>
-                      <IconButton onClick={() => {
-                        handleDeleteProduct(product.id);
-                        setProducts(await getAllProducts());
+                      <IconButton onClick={async () => {
+                        await handleDeleteProduct(product.id);
                       }}>
                         <Delete />
                       </IconButton>
@@ -952,7 +932,9 @@ const Admin = () => {
                       </IconButton>
                       <IconButton
                         size="small"
-                        onClick={() => handleDeleteCategory(category.id)}
+                        onClick={async () => {
+                          await handleDeleteCategory(category.id);
+                        }}
                         sx={{ color: '#D2691E' }}
                         disabled={category.productCount > 0}
                       >
@@ -1115,13 +1097,14 @@ const Admin = () => {
   // force re-render on refreshClients
   useEffect(() => {}, [refreshClients]);
 
+  const ADMIN_EMAIL = 'arunaarya0011@gmail.com'; // Set to your actual admin email
   const [isAdmin, setIsAdmin] = useState(false);
   const [loadingAdmin, setLoadingAdmin] = useState(true);
 
   useEffect(() => {
     async function checkAdmin() {
-      const session = await getSession();
-      if (session && session.user && session.user.user_metadata.is_admin) {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user && user.email === ADMIN_EMAIL) {
         setIsAdmin(true);
       } else {
         setIsAdmin(false);
@@ -1133,7 +1116,8 @@ const Admin = () => {
 
   if (loadingAdmin) return null;
   if (!isAdmin) {
-    return <div style={{ padding: 40, textAlign: 'center', color: 'red', fontWeight: 600, fontSize: 22 }}>Access denied. Admins only.</div>;
+    navigate('/admin-login');
+    return null;
   }
 
   return (
