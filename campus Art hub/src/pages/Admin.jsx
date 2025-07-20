@@ -507,19 +507,12 @@ const Admin = () => {
       const updatedCategory = await updateCategory(editingCategory.id, editingCategoryData);
       
       if (updatedCategory) {
-        // Update products that use this category
-        const updatedProducts = products.map(product => 
-          product.category === editingCategory.name 
-            ? { ...product, category: editingCategoryData.name }
-            : product
-        );
-
-        // Update product store
-        updatedProducts.forEach(product => {
-          productStore.updateProduct(product.id, product);
-        });
-
-        setProducts(productStore.getAllProducts());
+        // Update products that use this category in Supabase
+        const updatedProducts = products.filter(product => product.category === editingCategory.name);
+        await Promise.all(updatedProducts.map(product =>
+          supabase.from('products').update({ category: editingCategoryData.name }).eq('id', product.id)
+        ));
+        setProducts(await getAllProducts());
         setCategories(await getAllCategories());
         toast.success('Category updated successfully!');
         setOpenEditCategoryDialog(false);
