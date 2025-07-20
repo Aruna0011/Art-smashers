@@ -414,18 +414,12 @@ const Admin = () => {
     }
   };
 
-  const handleLogout = () => {
-    console.log('Logout function called'); // Debug log
+  const handleLogout = async () => {
     try {
-      // Clear admin session
-      localStorage.removeItem('adminAuthenticated');
-      localStorage.removeItem('adminUsername');
-      console.log('Local storage cleared'); // Debug log
+      await supabase.auth.signOut();
       toast.success('Logged out successfully');
-      console.log('Toast shown, navigating...'); // Debug log
       navigate('/admin-login');
     } catch (error) {
-      console.error('Error during logout:', error);
       toast.error('Error during logout');
     }
   };
@@ -850,6 +844,7 @@ const Admin = () => {
                       </IconButton>
                       <IconButton onClick={async () => {
                         await handleDeleteProduct(product.id);
+                        setProducts(await getAllProducts());
                       }}>
                         <Delete />
                       </IconButton>
@@ -933,6 +928,7 @@ const Admin = () => {
                         size="small"
                         onClick={async () => {
                           await handleDeleteCategory(category.id);
+                          setCategories(await getAllCategories());
                         }}
                         sx={{ color: '#D2691E' }}
                         disabled={category.productCount > 0}
