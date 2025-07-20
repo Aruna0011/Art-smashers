@@ -355,12 +355,17 @@ const Admin = () => {
 
   const handleDeleteProduct = async (productId) => {
     if (window.confirm('Are you sure you want to delete this product?')) {
-      const success = await deleteProduct(productId);
-      if (success) {
-        setProducts(await getAllProducts());
-        toast.success('Product deleted successfully!');
-      } else {
-        toast.error('Failed to delete product');
+      try {
+        const success = await deleteProduct(productId);
+        if (success) {
+          setProducts(await getAllProducts());
+          toast.success('Product deleted successfully!');
+        } else {
+          toast.error('Failed to delete product');
+        }
+      } catch (error) {
+        console.error('Supabase error (delete product):', error);
+        toast.error('Supabase error: ' + (error.message || error));
       }
     }
   };
@@ -372,71 +377,56 @@ const Admin = () => {
       return;
     }
 
-    // Update product in store
-    const success = await updateProduct(editingProduct.id, {
-      ...editingProductData,
-      price: Number(editingProductData.price),
-      stock: Number(editingProductData.stock),
-      images: editingProductData.images || editingProduct.images, // Use edited images or keep existing
-    });
-    
-    if (success) {
-      setProducts(await getAllProducts());
-      toast.success('Product updated successfully!');
-      setOpenEditProductDialog(false);
-      setEditingProduct(null);
-      setEditingProductData({});
-    } else {
-      toast.error('Failed to update product');
+    try {
+      // Update product in store
+      const success = await updateProduct(editingProduct.id, {
+        ...editingProductData,
+        price: Number(editingProductData.price),
+        stock: Number(editingProductData.stock),
+        images: editingProductData.images || editingProduct.images, // Use edited images or keep existing
+      });
+      
+      if (success) {
+        setProducts(await getAllProducts());
+        toast.success('Product updated successfully!');
+        setOpenEditProductDialog(false);
+        setEditingProduct(null);
+        setEditingProductData({});
+      } else {
+        toast.error('Failed to update product');
+      }
+    } catch (error) {
+      console.error('Supabase error (update product):', error);
+      toast.error('Supabase error: ' + (error.message || error));
     }
   };
 
   const handleAddNewProduct = async () => {
-    console.log('Adding new product:', newProduct); // Debug log
-    
-    // Validate required fields
-    if (!newProduct.name || !newProduct.category || !newProduct.price || !newProduct.stock) {
-      toast.error('Please fill in all required fields');
-      console.error('Validation failed - missing fields:', {
-        name: !!newProduct.name,
-        category: !!newProduct.category,
-        price: !!newProduct.price,
-        stock: !!newProduct.stock
-      });
-      return;
-    }
-    // Prepare product data
-    const productData = {
-      ...newProduct,
-      price: Number(newProduct.price),
-      stock: Number(newProduct.stock),
-      images: newProduct.images || [], // Use uploaded images or empty array
-    };
-
-    console.log('Prepared product data:', productData);
-
-    // Add product to store
-    const addedProduct = await addProduct(productData);
-
-    console.log('Product added result:', addedProduct);
-
-    if (addedProduct) {
-      setProducts(await getAllProducts()); // Always refresh
-      toast.success('Product added successfully!');
-      setOpenAddProductDialog(false);
-      setNewProduct({
-        name: '',
-        category: '',
-        price: '',
-        stock: '',
-        description: '',
-        images: [],
-      });
-      setSelectedImage(null);
-      setImagePreview('');
-    } else {
-      toast.error('Failed to add product');
-      console.error('Product addition failed');
+    try {
+      if (!newProduct.name || !newProduct.category || !newProduct.price || !newProduct.stock) {
+        toast.error('Please fill in all required fields');
+        return;
+      }
+      const productData = {
+        ...newProduct,
+        price: Number(newProduct.price),
+        stock: Number(newProduct.stock),
+        images: newProduct.images || [],
+      };
+      const addedProduct = await addProduct(productData);
+      if (addedProduct) {
+        setProducts(await getAllProducts());
+        toast.success('Product added successfully!');
+        setOpenAddProductDialog(false);
+        setNewProduct({ name: '', category: '', price: '', stock: '', description: '', images: [] });
+        setSelectedImage(null);
+        setImagePreview('');
+      } else {
+        toast.error('Failed to add product');
+      }
+    } catch (error) {
+      console.error('Supabase error (add product):', error);
+      toast.error('Supabase error: ' + (error.message || error));
     }
   };
 
@@ -481,12 +471,17 @@ const Admin = () => {
     }
 
     if (window.confirm('Are you sure you want to delete this category?')) {
-      const success = await deleteCategory(categoryId);
-      if (success) {
-        setCategories(await getAllCategories());
-        toast.success('Category deleted successfully!');
-      } else {
-        toast.error('Failed to delete category');
+      try {
+        const success = await deleteCategory(categoryId);
+        if (success) {
+          setCategories(await getAllCategories());
+          toast.success('Category deleted successfully!');
+        } else {
+          toast.error('Failed to delete category');
+        }
+      } catch (error) {
+        console.error('Supabase error (delete category):', error);
+        toast.error('Supabase error: ' + (error.message || error));
       }
     }
   };
@@ -507,30 +502,35 @@ const Admin = () => {
       return;
     }
 
-    // Update category in store
-    const updatedCategory = await updateCategory(editingCategory.id, editingCategoryData);
-    
-    if (updatedCategory) {
-      // Update products that use this category
-      const updatedProducts = products.map(product => 
-        product.category === editingCategory.name 
-          ? { ...product, category: editingCategoryData.name }
-          : product
-      );
+    try {
+      // Update category in store
+      const updatedCategory = await updateCategory(editingCategory.id, editingCategoryData);
+      
+      if (updatedCategory) {
+        // Update products that use this category
+        const updatedProducts = products.map(product => 
+          product.category === editingCategory.name 
+            ? { ...product, category: editingCategoryData.name }
+            : product
+        );
 
-      // Update product store
-      updatedProducts.forEach(product => {
-        productStore.updateProduct(product.id, product);
-      });
+        // Update product store
+        updatedProducts.forEach(product => {
+          productStore.updateProduct(product.id, product);
+        });
 
-      setProducts(productStore.getAllProducts());
-      setCategories(await getAllCategories());
-      toast.success('Category updated successfully!');
-      setOpenEditCategoryDialog(false);
-      setEditingCategory(null);
-      setEditingCategoryData({});
-    } else {
-      toast.error('Failed to update category');
+        setProducts(productStore.getAllProducts());
+        setCategories(await getAllCategories());
+        toast.success('Category updated successfully!');
+        setOpenEditCategoryDialog(false);
+        setEditingCategory(null);
+        setEditingCategoryData({});
+      } else {
+        toast.error('Failed to update category');
+      }
+    } catch (error) {
+      console.error('Supabase error (update category):', error);
+      toast.error('Supabase error: ' + (error.message || error));
     }
   };
 
@@ -550,19 +550,24 @@ const Admin = () => {
       return;
     }
 
-    const addedCategory = await addCategory({
-      name: newCategory.name,
-      description: newCategory.description,
-      image: newCategory.image || '',
-    });
+    try {
+      const addedCategory = await addCategory({
+        name: newCategory.name,
+        description: newCategory.description,
+        image: newCategory.image || '',
+      });
 
-    if (addedCategory) {
-      setCategories(await getAllCategories());
-      toast.success('Category added successfully!');
-      setOpenCategoryDialog(false);
-      setNewCategory({ name: '', description: '', image: '' });
-    } else {
-      toast.error('Failed to add category');
+      if (addedCategory) {
+        setCategories(await getAllCategories());
+        toast.success('Category added successfully!');
+        setOpenCategoryDialog(false);
+        setNewCategory({ name: '', description: '', image: '' });
+      } else {
+        toast.error('Failed to add category');
+      }
+    } catch (error) {
+      console.error('Supabase error (add category):', error);
+      toast.error('Supabase error: ' + (error.message || error));
     }
   };
 
@@ -649,12 +654,17 @@ const Admin = () => {
   // Function to handle deleting an order
   const handleDeleteOrder = async (orderId) => {
     if (window.confirm('Are you sure you want to delete this order?')) {
-      const success = await deleteOrder(orderId); // Assuming deleteOrder is in ordersApi.js
-      if (success) {
-        setOrders(orders.filter(order => order.id !== orderId));
-        toast.success('Order deleted successfully!');
-      } else {
-        toast.error('Failed to delete order');
+      try {
+        const success = await deleteOrder(orderId); // Assuming deleteOrder is in ordersApi.js
+        if (success) {
+          setOrders(orders.filter(order => order.id !== orderId));
+          toast.success('Order deleted successfully!');
+        } else {
+          toast.error('Failed to delete order');
+        }
+      } catch (error) {
+        console.error('Supabase error (delete order):', error);
+        toast.error('Supabase error: ' + (error.message || error));
       }
     }
   };
@@ -1098,9 +1108,14 @@ const Admin = () => {
 
   const handleDeleteUser = async (user) => {
     if (window.confirm('Are you sure you want to delete this client?')) {
-      await deleteUser(user.id);
-      setRefreshClients(r => r + 1);
-      toast.success('Client deleted successfully!');
+      try {
+        await deleteUser(user.id);
+        setRefreshClients(r => r + 1);
+        toast.success('Client deleted successfully!');
+      } catch (error) {
+        console.error('Supabase error (delete user):', error);
+        toast.error('Supabase error: ' + (error.message || error));
+      }
     }
   };
 
