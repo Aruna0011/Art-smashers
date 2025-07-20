@@ -82,13 +82,7 @@ const Products = () => {
     };
   }, []);
 
-  useEffect(() => {
-    try {
-      setWishlist(JSON.parse(localStorage.getItem('wishlist')) || []);
-    } catch {
-      setWishlist([]);
-    }
-  }, []);
+  // REMOVE all localStorage usage for wishlist. Use Supabase or in-memory state only.
 
   // Read category filter from URL query parameters
   useEffect(() => {
@@ -167,7 +161,7 @@ const Products = () => {
       updated = wishlist.filter(item => item.id !== product.id);
     }
     setWishlist(updated);
-    localStorage.setItem('wishlist', JSON.stringify(updated));
+    // localStorage.setItem('wishlist', JSON.stringify(updated)); // REMOVED
   };
 
   if (loading) {

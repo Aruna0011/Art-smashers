@@ -69,11 +69,7 @@ const ProductDetail = () => {
   const goToNext = () => setCurrentIndex((prev) => (prev + 1) % galleryImages.length);
 
   useEffect(() => {
-    try {
-      setWishlist(JSON.parse(localStorage.getItem('wishlist')) || []);
-    } catch {
-      setWishlist([]);
-    }
+    // REMOVE all localStorage usage for wishlist. Use Supabase or in-memory state only.
   }, []);
 
   useEffect(() => {
@@ -173,7 +169,7 @@ const ProductDetail = () => {
       updated = wishlist.filter(item => item.id !== product.id);
     }
     setWishlist(updated);
-    localStorage.setItem('wishlist', JSON.stringify(updated));
+    // REMOVE localStorage.setItem('wishlist', JSON.stringify(updated));
   };
 
   return (
