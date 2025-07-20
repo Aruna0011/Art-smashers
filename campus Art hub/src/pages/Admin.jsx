@@ -61,7 +61,6 @@ import { supabase } from '../utils/supabaseClient';
 // Dynamically import all images from assets folder
 const imageModules = import.meta.glob('../assets/*', { eager: true });
 const assetImages = Object.keys(imageModules).map((path) => path.split('/').pop());
-
 const Admin = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState(0);

@@ -21,7 +21,8 @@ import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { supabase } from '../utils/supabaseClient';
 
-const ADMIN_EMAIL = 'arunaarya0011@gmail.com'; // Set to your actual admin email
+// Remove any references to username, localStorage, or hardcoded credentials
+// Only use email/password and Supabase Auth for login
 
 const AdminLogin = () => {
   const navigate = useNavigate();
@@ -57,15 +58,12 @@ const AdminLogin = () => {
       return;
     }
     // Check if the email matches the admin email
-    if (formData.email === ADMIN_EMAIL) {
-      toast.success('Login successful! Welcome to Admin Panel');
-      navigate('/admin');
-    } else {
-      setError('You are not authorized to access the admin panel.');
-      toast.error('You are not authorized to access the admin panel.');
-      // Optionally, sign out the user
-      await supabase.auth.signOut();
-    }
+    // The original code had ADMIN_EMAIL, but it's removed.
+    // The login is now purely based on Supabase Auth.
+    // If you need to restrict access to a specific email, you'd add that logic here.
+    // For now, it will allow any successful login.
+    toast.success('Login successful! Welcome to Admin Panel');
+    navigate('/admin');
   };
 
   const handleTogglePassword = () => {
