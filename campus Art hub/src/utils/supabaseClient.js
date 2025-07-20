@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = 'YOUR_SUPABASE_URL'; // e.g. https://xxxx.supabase.co
-const supabaseKey = 'YOUR_SUPABASE_ANON_KEY';
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL; // Now uses env variable
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY; // Now uses env variable
 export const supabase = createClient(supabaseUrl, supabaseKey); 

@@ -42,6 +42,7 @@ import {
 import { Link, useLocation } from 'react-router-dom';
 import { getAllProducts } from '../utils/productApi';
 import { getAllCategories } from '../utils/categoryApi';
+import { supabase } from '../utils/supabaseClient';
 
 const Products = () => {
   const theme = useTheme();
@@ -60,37 +61,24 @@ const Products = () => {
     const loadData = async () => {
       const allProducts = await getAllProducts();
       const allCategories = await getAllCategories();
-      console.log('Products page: Loaded products:', allProducts.length, allProducts);
-      console.log('Products page: Loaded categories:', allCategories.length, allCategories);
       setProducts(allProducts);
       setCategories(allCategories);
       setLoading(false);
     };
-    
     loadData();
-    
-    // Listen for updates
-    const handleStorageChange = () => {
-      loadData();
-    };
-    
-    const handleCategoriesUpdate = () => {
-      // This function is no longer needed as categories are fetched directly
-    };
-    
-    const handleProductsUpdate = () => {
-      console.log('Products updated event received');
-      loadData();
-    };
-    
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('categoriesUpdated', handleCategoriesUpdate);
-    window.addEventListener('productsUpdated', handleProductsUpdate);
-    
+
+    // --- Real-time subscriptions ---
+    const categorySub = supabase
+      .channel('categories')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, loadData)
+      .subscribe();
+    const productSub = supabase
+      .channel('products')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, loadData)
+      .subscribe();
     return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('categoriesUpdated', handleCategoriesUpdate);
-      window.removeEventListener('productsUpdated', handleProductsUpdate);
+      supabase.removeChannel(categorySub);
+      supabase.removeChannel(productSub);
     };
   }, []);
 

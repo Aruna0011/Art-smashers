@@ -61,6 +61,7 @@ import { getAllUsers, updateUser, deleteUser } from '../utils/userApi';
 import { getAllOrders, updateOrder } from '../utils/ordersApi';
 import { uploadProductImage } from '../utils/imageUpload';
 import { getSession } from '../utils/supabaseAuth';
+import { supabase } from '../utils/supabaseClient';
 
 // Dynamically import all images from assets folder
 const imageModules = import.meta.glob('../assets/*', { eager: true });
@@ -100,9 +101,30 @@ const Admin = () => {
   const assetImages = Object.keys(imageModules).map((path) => path.split('/').pop());
 
   // State for selected images (filenames)
-  const [carouselImages, setCarouselImages] = useState(() => JSON.parse(localStorage.getItem('carouselImages') || '["landscape 1.png","landscape 2.png"]'));
-  const [wallImages, setWallImages] = useState(() => JSON.parse(localStorage.getItem('wallImages') || '["design 2.jpg","design 3.jpg"]'));
-  const [offerImages, setOfferImages] = useState(() => JSON.parse(localStorage.getItem('offerImages') || '["design 5.jpg","design4.jpg"]'));
+  const [carouselImages, setCarouselImages] = useState([]);
+  const [wallImages, setWallImages] = useState([]);
+  const [offerImages, setOfferImages] = useState([]);
+
+  useEffect(() => {
+    const loadImages = async () => {
+      const { data, error } = await supabase.from('images').select('*').order('order', { ascending: true });
+      if (!error && data) {
+        setCarouselImages(data.filter(img => img.type === 'carousel'));
+        setWallImages(data.filter(img => img.type === 'wall'));
+        setOfferImages(data.filter(img => img.type === 'offer'));
+      }
+    };
+    loadImages();
+
+    // Real-time subscription for images
+    const imageSub = supabase
+      .channel('images')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'images' }, loadImages)
+      .subscribe();
+    return () => {
+      supabase.removeChannel(imageSub);
+    };
+  }, []);
 
   // Add search state for each image dropdown section
   const [carouselSearch, setCarouselSearch] = useState('');
@@ -115,16 +137,38 @@ const Admin = () => {
   const [editCategoryImageSearch, setEditCategoryImageSearch] = useState('');
 
   // Add state for image links and section texts
-  const [carouselLinks, setCarouselLinks] = useState(() => JSON.parse(localStorage.getItem('carouselLinks') || '["/category/landscape","/category/landscape"]'));
-  const [wallLinks, setWallLinks] = useState(() => JSON.parse(localStorage.getItem('wallLinks') || '["/category/wall1","/category/wall2"]'));
-  const [offerLinks, setOfferLinks] = useState(() => JSON.parse(localStorage.getItem('offerLinks') || '["/category/offer1","/category/offer2"]'));
-  const [carouselText, setCarouselText] = useState(localStorage.getItem('carouselText') || '');
-  const [wallText, setWallText] = useState(localStorage.getItem('wallText') || '');
-  const [offerText, setOfferText] = useState(localStorage.getItem('offerText') || '');
+  const [carouselLinks, setCarouselLinks] = useState([]);
+  const [wallLinks, setWallLinks] = useState([]);
+  const [offerLinks, setOfferLinks] = useState([]);
+  const [carouselText, setCarouselText] = useState('');
+  const [wallText, setWallText] = useState('');
+  const [offerText, setOfferText] = useState('');
+  const [wallLabels, setWallLabels] = useState([]);
+  const [offerLabels, setOfferLabels] = useState([]);
 
-  // Add state for image labels
-  const [wallLabels, setWallLabels] = useState(() => JSON.parse(localStorage.getItem('wallLabels') || '[]'));
-  const [offerLabels, setOfferLabels] = useState(() => JSON.parse(localStorage.getItem('offerLabels') || '[]'));
+  useEffect(() => {
+    const loadImageMeta = async () => {
+      const { data, error } = await supabase.from('images').select('*');
+      if (!error && data) {
+        setCarouselLinks(data.filter(img => img.type === 'carousel').map(img => img.link || ''));
+        setWallLinks(data.filter(img => img.type === 'wall').map(img => img.link || ''));
+        setOfferLinks(data.filter(img => img.type === 'offer').map(img => img.link || ''));
+        setCarouselText(data.find(img => img.type === 'carousel' && img.text) ? data.find(img => img.type === 'carousel' && img.text).text : '');
+        setWallText(data.find(img => img.type === 'wall' && img.text) ? data.find(img => img.type === 'wall' && img.text).text : '');
+        setOfferText(data.find(img => img.type === 'offer' && img.text) ? data.find(img => img.type === 'offer' && img.text).text : '');
+        setWallLabels(data.filter(img => img.type === 'wall').map(img => img.label || ''));
+        setOfferLabels(data.filter(img => img.type === 'offer').map(img => img.label || ''));
+      }
+    };
+    loadImageMeta();
+    const imageMetaSub = supabase
+      .channel('images')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'images' }, loadImageMeta)
+      .subscribe();
+    return () => {
+      supabase.removeChannel(imageMetaSub);
+    };
+  }, []);
 
   // Handlers for dropdown selection
   const handleSelectImage = (type, idx, value) => {
@@ -133,44 +177,44 @@ const Admin = () => {
       updated = [...carouselImages];
       updated[idx] = value;
       setCarouselImages(updated);
-      localStorage.setItem('carouselImages', JSON.stringify(updated));
+      // localStorage.setItem('carouselImages', JSON.stringify(updated)); // Removed
     } else if (type === 'wall') {
       updated = [...wallImages];
       updated[idx] = value;
       setWallImages(updated);
-      localStorage.setItem('wallImages', JSON.stringify(updated));
+      // localStorage.setItem('wallImages', JSON.stringify(updated)); // Removed
     } else if (type === 'offer') {
       updated = [...offerImages];
       updated[idx] = value;
       setOfferImages(updated);
-      localStorage.setItem('offerImages', JSON.stringify(updated));
+      // localStorage.setItem('offerImages', JSON.stringify(updated)); // Removed
     }
   };
   const handleAddImageSlot = (type) => {
     if (type === 'carousel') {
       setCarouselImages([...carouselImages, assetImages[0]]);
-      localStorage.setItem('carouselImages', JSON.stringify([...carouselImages, assetImages[0]]));
+      // localStorage.setItem('carouselImages', JSON.stringify([...carouselImages, assetImages[0]])); // Removed
     } else if (type === 'wall') {
       setWallImages([...wallImages, assetImages[0]]);
-      localStorage.setItem('wallImages', JSON.stringify([...wallImages, assetImages[0]]));
+      // localStorage.setItem('wallImages', JSON.stringify([...wallImages, assetImages[0]])); // Removed
     } else if (type === 'offer') {
       setOfferImages([...offerImages, assetImages[0]]);
-      localStorage.setItem('offerImages', JSON.stringify([...offerImages, assetImages[0]]));
+      // localStorage.setItem('offerImages', JSON.stringify([...offerImages, assetImages[0]])); // Removed
     }
   };
   const handleRemoveImageSlot = (type, idx) => {
     if (type === 'carousel') {
       const updated = carouselImages.filter((_, i) => i !== idx);
       setCarouselImages(updated);
-      localStorage.setItem('carouselImages', JSON.stringify(updated));
+      // localStorage.setItem('carouselImages', JSON.stringify(updated)); // Removed
     } else if (type === 'wall') {
       const updated = wallImages.filter((_, i) => i !== idx);
       setWallImages(updated);
-      localStorage.setItem('wallImages', JSON.stringify(updated));
+      // localStorage.setItem('wallImages', JSON.stringify(updated)); // Removed
     } else if (type === 'offer') {
       const updated = offerImages.filter((_, i) => i !== idx);
       setOfferImages(updated);
-      localStorage.setItem('offerImages', JSON.stringify(updated));
+      // localStorage.setItem('offerImages', JSON.stringify(updated)); // Removed
     }
   };
 
@@ -181,29 +225,29 @@ const Admin = () => {
       updated = [...carouselLinks];
       updated[idx] = value;
       setCarouselLinks(updated);
-      localStorage.setItem('carouselLinks', JSON.stringify(updated));
+      // localStorage.setItem('carouselLinks', JSON.stringify(updated)); // Removed
     } else if (type === 'wall') {
       updated = [...wallLinks];
       updated[idx] = value;
       setWallLinks(updated);
-      localStorage.setItem('wallLinks', JSON.stringify(updated));
+      // localStorage.setItem('wallLinks', JSON.stringify(updated)); // Removed
     } else if (type === 'offer') {
       updated = [...offerLinks];
       updated[idx] = value;
       setOfferLinks(updated);
-      localStorage.setItem('offerLinks', JSON.stringify(updated));
+      // localStorage.setItem('offerLinks', JSON.stringify(updated)); // Removed
     }
   };
   const handleSectionTextChange = (type, value) => {
     if (type === 'carousel') {
       setCarouselText(value);
-      localStorage.setItem('carouselText', value);
+      // localStorage.setItem('carouselText', value); // Removed
     } else if (type === 'wall') {
       setWallText(value);
-      localStorage.setItem('wallText', value);
+      // localStorage.setItem('wallText', value); // Removed
     } else if (type === 'offer') {
       setOfferText(value);
-      localStorage.setItem('offerText', value);
+      // localStorage.setItem('offerText', value); // Removed
     }
   };
 
@@ -213,12 +257,12 @@ const Admin = () => {
       const updated = [...wallLabels];
       updated[idx] = value;
       setWallLabels(updated);
-      localStorage.setItem('wallLabels', JSON.stringify(updated));
+      // localStorage.setItem('wallLabels', JSON.stringify(updated)); // Removed
     } else if (type === 'offer') {
       const updated = [...offerLabels];
       updated[idx] = value;
       setOfferLabels(updated);
-      localStorage.setItem('offerLabels', JSON.stringify(updated));
+      // localStorage.setItem('offerLabels', JSON.stringify(updated)); // Removed
     }
   };
 
@@ -959,7 +1003,7 @@ const Admin = () => {
             <FormControl fullWidth size="small" sx={{ mr: 1 }}>
               <InputLabel>Select Image</InputLabel>
               <Select
-                value={img}
+                value={img.image}
                 label="Select Image"
                 onChange={e => handleSelectImage(type, idx, e.target.value)}
                 MenuProps={{ PaperProps: { style: { maxHeight: 200 } } }}
@@ -970,7 +1014,7 @@ const Admin = () => {
               </Select>
             </FormControl>
             <Box sx={{ width: 60, height: 44, ml: 1, borderRadius: 2, overflow: 'hidden', border: '1px solid #eee', background: '#fff' }}>
-              <img src={new URL(`../assets/${img}`, import.meta.url).href} alt={img} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              <img src={new URL(`../assets/${img.image}`, import.meta.url).href} alt={img.label} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             </Box>
             <TextField
               size="small"

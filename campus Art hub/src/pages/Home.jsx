@@ -32,6 +32,7 @@ import { Link } from 'react-router-dom';
 import { getAllProducts } from '../utils/productApi';
 import { getAllCategories } from '../utils/categoryApi';
 import { useRef } from 'react';
+import { supabase } from '../utils/supabaseClient';
 
 const Home = () => {
   const theme = useTheme();
@@ -42,64 +43,36 @@ const Home = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
 
   // --- Dynamic Images from Admin Panel ---
-  const getLocalImages = (key, fallback) => {
-    try {
-      const imgs = JSON.parse(localStorage.getItem(key));
-      if (Array.isArray(imgs) && imgs.length > 0) return imgs;
-    } catch {}
-    return fallback;
-  };
-  // Carousel/Slider images
-  const [slides, setSlides] = useState(() => getLocalImages('carouselImages', [
-    { image: 'landscape 1.png' },
-    { image: 'landscape 2.png' },
-  ]).map(img => typeof img === 'string' ? { image: img } : img));
-  // Wall images
-  const [wallImages, setWallImages] = useState(() => getLocalImages('wallImages', [
-    { image: 'design 2.jpg' },
-    { image: 'design 3.jpg' },
-  ]).map(img => typeof img === 'string' ? { image: img } : img));
-  // Offer images
-  const [offerImages, setOfferImages] = useState(() => getLocalImages('offerImages', [
-    { image: 'design 5.jpg' },
-    { image: 'design4.jpg' },
-  ]).map(img => typeof img === 'string' ? { image: img } : img));
+  const [slides, setSlides] = useState([]);
+  const [wallImages, setWallImages] = useState([]);
+  const [offerImages, setOfferImages] = useState([]);
 
   // Section titles and descriptions from admin (localStorage)
-  const [carouselText, setCarouselText] = useState(localStorage.getItem('carouselText') || '');
-  const [wallText, setWallText] = useState(localStorage.getItem('wallText') || '');
-  const [offerText, setOfferText] = useState(localStorage.getItem('offerText') || '');
-  // Per-image labels
-  const [wallLabels, setWallLabels] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('wallLabels') || '[]'); } catch { return []; }
-  });
-  const [offerLabels, setOfferLabels] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('offerLabels') || '[]'); } catch { return []; }
-  });
+  const [carouselText, setCarouselText] = useState('');
+  const [wallText, setWallText] = useState('');
+  const [offerText, setOfferText] = useState('');
+  const [wallLabels, setWallLabels] = useState([]);
+  const [offerLabels, setOfferLabels] = useState([]);
 
   useEffect(() => {
-    const handleStorage = (e) => {
-      if (e.key === 'carouselImages') {
-        setSlides(getLocalImages('carouselImages', [
-          { image: 'landscape 1.png' },
-          { image: 'landscape 2.png' },
-        ]).map(img => typeof img === 'string' ? { image: img } : img));
-      }
-      if (e.key === 'wallImages') {
-        setWallImages(getLocalImages('wallImages', [
-          { image: 'design 2.jpg' },
-          { image: 'design 3.jpg' },
-        ]).map(img => typeof img === 'string' ? { image: img } : img));
-      }
-      if (e.key === 'offerImages') {
-        setOfferImages(getLocalImages('offerImages', [
-          { image: 'design 5.jpg' },
-          { image: 'design4.jpg' },
-        ]).map(img => typeof img === 'string' ? { image: img } : img));
+    const loadImages = async () => {
+      const { data, error } = await supabase.from('images').select('*').order('order', { ascending: true });
+      if (!error && data) {
+        setSlides(data.filter(img => img.type === 'carousel'));
+        setWallImages(data.filter(img => img.type === 'wall'));
+        setOfferImages(data.filter(img => img.type === 'offer'));
       }
     };
-    window.addEventListener('storage', handleStorage);
-    return () => window.removeEventListener('storage', handleStorage);
+    loadImages();
+
+    // Real-time subscription for images
+    const imageSub = supabase
+      .channel('images')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'images' }, loadImages)
+      .subscribe();
+    return () => {
+      supabase.removeChannel(imageSub);
+    };
   }, []);
 
   // Auto-slide functionality
@@ -124,6 +97,27 @@ const Home = () => {
   };
 
   useEffect(() => {
+    const loadImageMeta = async () => {
+      const { data, error } = await supabase.from('images').select('*');
+      if (!error && data) {
+        setCarouselText(data.find(img => img.type === 'carousel' && img.text) ? data.find(img => img.type === 'carousel' && img.text).text : '');
+        setWallText(data.find(img => img.type === 'wall' && img.text) ? data.find(img => img.type === 'wall' && img.text).text : '');
+        setOfferText(data.find(img => img.type === 'offer' && img.text) ? data.find(img => img.type === 'offer' && img.text).text : '');
+        setWallLabels(data.filter(img => img.type === 'wall').map(img => img.label || ''));
+        setOfferLabels(data.filter(img => img.type === 'offer').map(img => img.label || ''));
+      }
+    };
+    loadImageMeta();
+    const imageMetaSub = supabase
+      .channel('images')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'images' }, loadImageMeta)
+      .subscribe();
+    return () => {
+      supabase.removeChannel(imageMetaSub);
+    };
+  }, []);
+
+  useEffect(() => {
     const loadData = async () => {
       const allCategories = await getAllCategories();
       const allProducts = await getAllProducts();
@@ -132,6 +126,20 @@ const Home = () => {
       setFeaturedProducts(featured);
     };
     loadData();
+
+    // --- Real-time subscriptions ---
+    const categorySub = supabase
+      .channel('categories')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, loadData)
+      .subscribe();
+    const productSub = supabase
+      .channel('products')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, loadData)
+      .subscribe();
+    return () => {
+      supabase.removeChannel(categorySub);
+      supabase.removeChannel(productSub);
+    };
   }, []);
 
   const getCategoryIcon = (categoryName) => {

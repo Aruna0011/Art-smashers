@@ -373,7 +373,8 @@ const Checkout = () => {
     });
 
     // Call backend to get Paytm params
-    const res = await fetch('http://localhost:5000/api/paytm/initiate', {
+    const paytmApiUrl = import.meta.env.VITE_PAYTM_API_URL;
+    const res = await fetch(paytmApiUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ orderId, amount, customerId, callbackUrl, email, phone })
