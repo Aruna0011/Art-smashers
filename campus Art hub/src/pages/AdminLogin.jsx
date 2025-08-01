@@ -19,7 +19,7 @@ import {
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { supabase } from '../utils/supabaseClient';
+import userService from '../utils/userService';
 
 // Remove any references to username, localStorage, or hardcoded credentials
 // Only use email/password and Supabase Auth for login
@@ -47,23 +47,24 @@ const AdminLogin = () => {
       setError('Please fill in all fields');
       return;
     }
-    // Supabase Auth login
-    const { data, error: supaError } = await supabase.auth.signInWithPassword({
-      email: formData.email,
-      password: formData.password,
-    });
-    if (supaError) {
-      setError('Login failed. Please check your credentials.');
-      toast.error('Login failed. Please check your credentials.');
-      return;
+
+    try {
+      // Use local userService for authentication
+      const user = userService.loginUser(formData.email, formData.password);
+      
+      // Check if user is admin
+      if (user && user.isAdmin) {
+        toast.success('Login successful! Welcome to Admin Panel');
+        localStorage.setItem('adminAuthenticated', 'true');
+        navigate('/admin');
+      } else {
+        setError('Access denied. Admin privileges required.');
+        toast.error('Access denied. Admin privileges required.');
+      }
+    } catch (error) {
+      setError('Invalid email or password');
+      toast.error('Invalid email or password');
     }
-    // Check if the email matches the admin email
-    // The original code had ADMIN_EMAIL, but it's removed.
-    // The login is now purely based on Supabase Auth.
-    // If you need to restrict access to a specific email, you'd add that logic here.
-    // For now, it will allow any successful login.
-    toast.success('Login successful! Welcome to Admin Panel');
-    navigate('/admin');
   };
 
   const handleTogglePassword = () => {
