@@ -417,12 +417,14 @@ const Admin = () => {
 
   const handleLogout = async () => {
     try {
-      // Clear admin authentication
+      // Sign out from Supabase
+      await supabase.auth.signOut();
+      // Clear local storage
       localStorage.removeItem('adminAuthenticated');
-      userService.logoutUser();
       toast.success('Logged out successfully');
       navigate('/admin-login');
     } catch (error) {
+      console.error('Logout error:', error);
       toast.error('Error during logout');
     }
   };
@@ -1103,16 +1105,28 @@ const Admin = () => {
   const [loadingAdmin, setLoadingAdmin] = useState(true);
 
   useEffect(() => {
-    function checkAdmin() {
+    async function checkAdmin() {
       try {
-        // Check if admin is authenticated via localStorage
-        const adminAuthenticated = localStorage.getItem('adminAuthenticated');
-        const currentUser = userService.getCurrentUser();
+        // Check if user is authenticated with Supabase
+        const { data: { user }, error } = await supabase.auth.getUser();
         
-        if (adminAuthenticated === 'true' && currentUser && currentUser.isAdmin) {
-          setIsAdmin(true);
-        } else {
+        if (error || !user) {
           setIsAdmin(false);
+          setLoadingAdmin(false);
+          return;
+        }
+
+        // Check if user is admin by querying the users table
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select('*')
+          .eq('email', user.email)
+          .single();
+
+        if (userError || !userData || !userData.is_admin) {
+          setIsAdmin(false);
+        } else {
+          setIsAdmin(true);
         }
       } catch (error) {
         console.error('Admin check error:', error);

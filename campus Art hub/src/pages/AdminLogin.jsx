@@ -19,7 +19,7 @@ import {
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import userService from '../utils/userService';
+import { supabase } from '../utils/supabaseClient';
 
 // Remove any references to username, localStorage, or hardcoded credentials
 // Only use email/password and Supabase Auth for login
@@ -49,21 +49,40 @@ const AdminLogin = () => {
     }
 
     try {
-      // Use local userService for authentication
-      const user = userService.loginUser(formData.email, formData.password);
-      
-      // Check if user is admin
-      if (user && user.isAdmin) {
-        toast.success('Login successful! Welcome to Admin Panel');
-        localStorage.setItem('adminAuthenticated', 'true');
-        navigate('/admin');
-      } else {
+      // Use Supabase authentication
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: formData.email,
+        password: formData.password,
+      });
+
+      if (error) {
+        setError('Invalid email or password');
+        toast.error('Invalid email or password');
+        return;
+      }
+
+      // Check if user is admin by querying the users table
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('email', formData.email)
+        .single();
+
+      if (userError || !userData || !userData.is_admin) {
         setError('Access denied. Admin privileges required.');
         toast.error('Access denied. Admin privileges required.');
+        // Sign out the user since they're not admin
+        await supabase.auth.signOut();
+        return;
       }
+
+      toast.success('Login successful! Welcome to Admin Panel');
+      localStorage.setItem('adminAuthenticated', 'true');
+      navigate('/admin');
     } catch (error) {
-      setError('Invalid email or password');
-      toast.error('Invalid email or password');
+      console.error('Login error:', error);
+      setError('Login failed. Please try again.');
+      toast.error('Login failed. Please try again.');
     }
   };
 
