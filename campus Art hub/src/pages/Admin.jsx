@@ -56,6 +56,7 @@ import { getAllUsers, updateUser, deleteUser } from '../utils/userApi';
 import { getAllOrders, updateOrder } from '../utils/ordersApi';
 import { uploadProductImage } from '../utils/imageUpload';
 import userService from '../utils/userService';
+import contactMessageStore from '../utils/contactMessageStore';
 import { supabase } from '../utils/supabaseClient';
 
 // Dynamically import all images from assets folder
