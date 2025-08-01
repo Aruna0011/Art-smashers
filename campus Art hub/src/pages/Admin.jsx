@@ -55,7 +55,7 @@ import { getAllCategories, addCategory, updateCategory, deleteCategory } from '.
 import { getAllUsers, updateUser, deleteUser } from '../utils/userApi';
 import { getAllOrders, updateOrder } from '../utils/ordersApi';
 import { uploadProductImage } from '../utils/imageUpload';
-import { getSession } from '../utils/supabaseAuth';
+import userService from '../utils/userService';
 import { supabase } from '../utils/supabaseClient';
 
 // Dynamically import all images from assets folder
@@ -416,7 +416,9 @@ const Admin = () => {
 
   const handleLogout = async () => {
     try {
-      await supabase.auth.signOut();
+      // Clear admin authentication
+      localStorage.removeItem('adminAuthenticated');
+      userService.logoutUser();
       toast.success('Logged out successfully');
       navigate('/admin-login');
     } catch (error) {
@@ -1096,19 +1098,27 @@ const Admin = () => {
   // force re-render on refreshClients
   useEffect(() => {}, [refreshClients]);
 
-  const ADMIN_EMAIL = 'arunaarya0011@gmail.com'; // Set to your actual admin email
   const [isAdmin, setIsAdmin] = useState(false);
   const [loadingAdmin, setLoadingAdmin] = useState(true);
 
   useEffect(() => {
-    async function checkAdmin() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user && user.email === ADMIN_EMAIL) {
-        setIsAdmin(true);
-      } else {
+    function checkAdmin() {
+      try {
+        // Check if admin is authenticated via localStorage
+        const adminAuthenticated = localStorage.getItem('adminAuthenticated');
+        const currentUser = userService.getCurrentUser();
+        
+        if (adminAuthenticated === 'true' && currentUser && currentUser.isAdmin) {
+          setIsAdmin(true);
+        } else {
+          setIsAdmin(false);
+        }
+      } catch (error) {
+        console.error('Admin check error:', error);
         setIsAdmin(false);
+      } finally {
+        setLoadingAdmin(false);
       }
-      setLoadingAdmin(false);
     }
     checkAdmin();
   }, []);
