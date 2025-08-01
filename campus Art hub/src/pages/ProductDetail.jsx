@@ -41,7 +41,7 @@ import {
 import { useParams, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { cartStore } from '../utils/cartStore';
-import { productStore } from '../utils/productStore';
+import productStore from '../utils/productStore';
 
 // Helper to get the correct image src
 const getImageSrc = (img) => {

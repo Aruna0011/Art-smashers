@@ -441,7 +441,9 @@ const Admin = () => {
 
   const handleDeleteCategory = async (categoryId) => {
     // Check if category has products
-    const productsInCategory = products.filter(product => product.category === (await getAllCategories()).find(cat => cat.id === categoryId)?.name);
+    const allCategories = await getAllCategories();
+    const categoryToDelete = allCategories.find(cat => cat.id === categoryId);
+    const productsInCategory = products.filter(product => product.category === categoryToDelete?.name);
     
     if (productsInCategory.length > 0) {
       toast.error(`Cannot delete category. It has ${productsInCategory.length} products. Please reassign or delete products first.`);
@@ -470,7 +472,8 @@ const Admin = () => {
     }
 
     // Check if name already exists (excluding current category)
-    const nameExists = (await getAllCategories()).some(cat => 
+    const allCategories = await getAllCategories();
+    const nameExists = allCategories.some(cat => 
       cat.name.toLowerCase() === editingCategoryData.name.toLowerCase() && cat.id !== editingCategory.id
     );
 
@@ -509,7 +512,8 @@ const Admin = () => {
     }
 
     // Check if name already exists
-    const nameExists = (await getAllCategories()).some(cat => 
+    const allCategories = await getAllCategories();
+    const nameExists = allCategories.some(cat => 
       cat.name.toLowerCase() === newCategory.name.toLowerCase()
     );
 

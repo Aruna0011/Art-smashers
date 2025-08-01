@@ -26,7 +26,7 @@ import {
 } from '@mui/icons-material';
 import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { productStore } from '../utils/productStore';
+import productStore from '../utils/productStore';
 import userService from '../utils/userService';
 import { getCart, addToCart, updateCartItem, removeFromCart, clearCart } from '../utils/cartApi';
 

@@ -4,8 +4,9 @@ import emailjs from '@emailjs/browser';
 class EmailService {
   constructor() {
     this.sentEmails = [];
-    // Initialize EmailJS with your public key
-    emailjs.init("4w6rVxfROp-VytAOk");
+    // Initialize EmailJS with environment variable or fallback
+    const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY || "4w6rVxfROp-VytAOk";
+    emailjs.init(publicKey);
   }
 
   async sendPasswordResetEmail(toEmail, toName, resetLink) {
@@ -19,12 +20,17 @@ class EmailService {
         subject: 'Password Reset Request - Art Smashers'
       };
 
+      // Get service and template IDs from environment variables or use defaults
+      const serviceId = import.meta.env.VITE_EMAILJS_SERVICE_ID || 'service_oxk0ysp';
+      const templateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID || 'template_bttikmn';
+      const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY || "4w6rVxfROp-VytAOk";
+
       // Send email using EmailJS
       const response = await emailjs.send(
-        'service_oxk0ysp', // Your real EmailJS service ID
-        'template_bttikmn', // Your real EmailJS template ID
+        serviceId,
+        templateId,
         templateParams,
-        '4w6rVxfROp-VytAOk' // Your public key
+        publicKey
       );
 
       // Store email data for tracking

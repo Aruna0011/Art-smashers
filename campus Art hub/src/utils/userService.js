@@ -5,10 +5,7 @@ class UserService {
   constructor() {
     this.usersKey = 'art_hub_users';
     this.currentUserKey = 'art_hub_current_user';
-    // Removed default user seeding
   }
-
-  // Removed initializeDefaultUsers method
 
   // Get all users
   getAllUsers() {
@@ -140,9 +137,35 @@ class UserService {
     const currentUser = this.getCurrentUser();
     return currentUser && currentUser.isAdmin;
   }
+
+  // Create admin user if none exists
+  initializeAdminUser() {
+    const users = this.getAllUsers();
+    const adminExists = users.some(user => user.isAdmin);
+    
+    if (!adminExists) {
+      const adminUser = {
+        id: 'admin-1',
+        name: 'Admin User',
+        email: 'admin@campusarthub.com',
+        password: 'admin123',
+        phone: '+91 98765 43210',
+        address: 'Campus Address',
+        isAdmin: true,
+        createdAt: new Date().toISOString()
+      };
+      
+      users.push(adminUser);
+      localStorage.setItem(this.usersKey, JSON.stringify(users));
+      console.log('✅ Admin user created: admin@campusarthub.com / admin123');
+    }
+  }
 }
 
 // Create singleton instance
 const userService = new UserService();
+
+// Initialize admin user on first load
+userService.initializeAdminUser();
 
 export default userService; 

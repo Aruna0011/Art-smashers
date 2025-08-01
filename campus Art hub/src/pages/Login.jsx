@@ -31,14 +31,13 @@ const Login = () => {
     const trimmedEmail = formData.email.trim();
     const trimmedPassword = formData.password.trim();
     try {
-      const user = await signIn(trimmedEmail, trimmedPassword);
+      const result = await signIn({ email: trimmedEmail, password: trimmedPassword });
       setError('');
-      if (user) {
-        // Store session in Supabase Auth, not localStorage
-        // The user object returned by signIn includes session data
-        // For now, we'll just navigate based on a hypothetical 'isAdmin' flag
-        // In a real app, you'd manage session state globally or use Supabase hooks
-        if (user.isAdmin) {
+      if (result && result.user) {
+        // Check if user is admin (stored in user metadata or local storage)
+        const isAdmin = result.user.isAdmin || result.user.user_metadata?.isAdmin;
+        if (isAdmin) {
+          localStorage.setItem('adminAuthenticated', 'true');
           navigate('/admin');
         } else {
           navigate('/profile');
@@ -67,11 +66,7 @@ const Login = () => {
     setForgotMessage('');
     try {
       const trimmedForgotEmail = forgotEmail.trim();
-      // Assuming userService.checkEmailExists is no longer needed
-      // If you need to check if an email exists in your Supabase users table,
-      // you'd do it here using Supabase client.
-      // For now, we'll just send the email for password reset.
-      const resetLink = `https://your-art-hub.com/reset-password?token=demo123&email=${trimmedForgotEmail}`;
+      const resetLink = `${window.location.origin}/reset-password?token=demo123&email=${trimmedForgotEmail}`;
       await emailService.sendPasswordResetEmail(trimmedForgotEmail, 'Demo User', resetLink);
       setForgotMessage('✅ Password reset email sent successfully! Check your inbox and spam folder.');
     } catch (error) {
@@ -117,8 +112,8 @@ const Login = () => {
           <path d="M0 16 Q 30 0, 60 16 T 120 16 T 180 16" stroke="#fff59d" strokeWidth="4" fill="none" opacity="0.5"/>
         </svg>
       </Box>
-      {/* Decorative Honey Pot with Bee SVG */}
-      <Box sx={{ position: 'absolute', top: 36, right: 48, zIndex: 1 }}>
+      {/* Decorative Honey Pot with Bee SVG (top right) */}
+      <Box sx={{ position: 'absolute', top: 36, right: 48, zIndex: 1, display: { xs: 'none', sm: 'none', md: 'block' } }}>
         <svg width="64" height="60" viewBox="0 0 64 60" fill="none" xmlns="http://www.w3.org/2000/svg">
           {/* Honey pot */}
           <ellipse cx="32" cy="48" rx="18" ry="10" fill="#e0a800" stroke="#b8860b" strokeWidth="2"/>
@@ -133,29 +128,57 @@ const Login = () => {
           <ellipse cx="47" cy="24" rx="1" ry="1.5" fill="#222"/>
           <ellipse cx="53" cy="24" rx="1" ry="1.5" fill="#222"/>
           {/* Bee wings */}
-          <ellipse cx="48" cy="19" rx="2" ry="1.2" fill="#b3e5fc" fillOpacity="0.7"/>
-          <ellipse cx="52" cy="19" rx="2" ry="1.2" fill="#b3e5fc" fillOpacity="0.7"/>
+          <ellipse cx="48" cy="18" rx="3" ry="2" fill="#fff" stroke="#222" strokeWidth="0.8"/>
+          <ellipse cx="52" cy="18" rx="3" ry="2" fill="#fff" stroke="#222" strokeWidth="0.8"/>
         </svg>
       </Box>
-      <Card sx={{ width: 370, maxWidth: '95vw', boxShadow: 8, borderRadius: 3, p: 3 }}>
-        <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', p: 0 }}>
-          <Typography variant="h5" sx={{ fontWeight: 700, mb: 1, textAlign: 'center' }}>Login to your account</Typography>
-          <Typography variant="body2" sx={{ textAlign: 'center', mb: 2 }}>
-            Don't have an account?{' '}
-            <Link to="/register" style={{ color: '#b39ddb', fontWeight: 600, textDecoration: 'none' }}>Sign Up Free!</Link>
-          </Typography>
-          {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-          <Box component="form" onSubmit={handleSubmit} sx={{ width: '100%' }}>
+      {/* Main Login Card */}
+      <Card sx={{ 
+        maxWidth: 400, 
+        width: '90%', 
+        borderRadius: 4, 
+        boxShadow: '0 8px 32px rgba(0,0,0,0.1)', 
+        backdropFilter: 'blur(10px)',
+        backgroundColor: 'rgba(255,255,255,0.95)',
+        zIndex: 2
+      }}>
+        <CardContent sx={{ p: 4 }}>
+          {/* Logo */}
+          <Box sx={{ textAlign: 'center', mb: 3 }}>
+            <img src={logo} alt="Art Smashers Logo" style={{ height: 60, marginBottom: 16 }} />
+            <Typography variant="h4" component="h1" sx={{ fontWeight: 700, color: '#6a11cb', mb: 1 }}>
+              Welcome Back!
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Sign in to your Art Smashers account
+            </Typography>
+          </Box>
+
+          {/* Error Alert */}
+          {error && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {error}
+            </Alert>
+          )}
+
+          {/* Login Form */}
+          <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2 }}>
             <TextField
               fullWidth
-              label="Email address"
+              label="Email"
               name="email"
+              type="email"
               value={formData.email}
               onChange={handleInputChange}
-              margin="normal"
               required
-              autoComplete="email"
               sx={{ mb: 2 }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Email sx={{ color: '#6a11cb' }} />
+                  </InputAdornment>
+                ),
+              }}
             />
             <TextField
               fullWidth
@@ -164,11 +187,14 @@ const Login = () => {
               type={showPassword ? 'text' : 'password'}
               value={formData.password}
               onChange={handleInputChange}
-              margin="normal"
               required
-              autoComplete="current-password"
               sx={{ mb: 2 }}
               InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Lock sx={{ color: '#6a11cb' }} />
+                  </InputAdornment>
+                ),
                 endAdornment: (
                   <InputAdornment position="end">
                     <IconButton onClick={handleTogglePassword} edge="end">
@@ -178,72 +204,96 @@ const Login = () => {
                 ),
               }}
             />
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+
+            {/* Remember Me & Forgot Password */}
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
               <FormControlLabel
-                control={<Checkbox checked={rememberMe} onChange={e => setRememberMe(e.target.checked)} sx={{ p: 0.5 }} />}
-                label={<Typography variant="body2">Remember me</Typography>}
-                sx={{ m: 0 }}
+                control={
+                  <Checkbox
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    sx={{ '&.Mui-checked': { color: '#6a11cb' } }}
+                  />
+                }
+                label="Remember me"
               />
-              <Button onClick={() => setForgotPasswordOpen(true)} sx={{ color: '#b39ddb', textTransform: 'none', fontSize: 14, p: 0, minWidth: 0 }}>
-                Forgot password?
+              <Button
+                onClick={() => setForgotPasswordOpen(true)}
+                sx={{ color: '#6a11cb', textTransform: 'none' }}
+              >
+                Forgot Password?
               </Button>
             </Box>
-            <Button type="submit" fullWidth variant="contained" size="large" sx={{ background: 'linear-gradient(90deg, #b39ddb 0%, #b39ddb 100%)', color: '#fff', fontWeight: 600, fontSize: 16, boxShadow: 2, py: 1.5, mb: 1, mt: 1 }}>
-              Login with email
+
+            {/* Login Button */}
+            <Button
+              type="submit"
+              fullWidth
+              variant="contained"
+              sx={{
+                py: 1.5,
+                backgroundColor: '#6a11cb',
+                '&:hover': { backgroundColor: '#5a0cb8' },
+                borderRadius: 2,
+                textTransform: 'none',
+                fontSize: '1.1rem',
+                fontWeight: 600
+              }}
+            >
+              Sign In
             </Button>
+
+            {/* Register Link */}
+            <Box sx={{ textAlign: 'center', mt: 3 }}>
+              <Typography variant="body2" color="text.secondary">
+                Don't have an account?{' '}
+                <Link to="/register" style={{ color: '#6a11cb', textDecoration: 'none', fontWeight: 600 }}>
+                  Sign up here
+                </Link>
+              </Typography>
+            </Box>
           </Box>
-        </Box>
+        </CardContent>
       </Card>
+
       {/* Forgot Password Dialog */}
       <Dialog open={forgotPasswordOpen} onClose={() => setForgotPasswordOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ textAlign: 'center', color: '#8B4513' }}>
-          Forgot Password
+        <DialogTitle sx={{ textAlign: 'center', color: '#6a11cb', fontWeight: 600 }}>
+          Reset Your Password
         </DialogTitle>
         <DialogContent>
-          <Typography variant="body2" sx={{ mb: 2, color: '#666' }}>
+          <Typography variant="body2" sx={{ mb: 2, color: 'text.secondary' }}>
             Enter your email address and we'll send you a link to reset your password.
           </Typography>
-          {forgotMessage && (
-            <Alert severity={forgotMessage.includes('sent') ? 'success' : 'error'} sx={{ mb: 2 }}>
-              {forgotMessage}
-            </Alert>
-          )}
           <TextField
             fullWidth
-            label="Email"
+            label="Email Address"
             type="email"
             value={forgotEmail}
             onChange={(e) => setForgotEmail(e.target.value)}
-            margin="normal"
-            required
-            placeholder="Enter your email address"
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <Email />
-                </InputAdornment>
-              ),
-            }}
+            sx={{ mb: 2 }}
           />
+          {forgotMessage && (
+            <Alert severity={forgotMessage.includes('✅') ? 'success' : 'error'} sx={{ mb: 2 }}>
+              {forgotMessage}
+            </Alert>
+          )}
         </DialogContent>
-        <DialogActions sx={{ p: 3, pt: 1 }}>
-          <Button onClick={() => setForgotPasswordOpen(false)} color="inherit" disabled={isSendingEmail}>
+        <DialogActions sx={{ p: 3, pt: 0 }}>
+          <Button onClick={() => setForgotPasswordOpen(false)} sx={{ color: 'text.secondary' }}>
             Cancel
           </Button>
-          <Button 
-            onClick={handleForgotPassword} 
+          <Button
+            onClick={handleForgotPassword}
             variant="contained"
             disabled={isSendingEmail}
-            sx={{ backgroundColor: '#8B4513', '&:hover': { backgroundColor: '#A0522D' } }}
+            sx={{
+              backgroundColor: '#6a11cb',
+              '&:hover': { backgroundColor: '#5a0cb8' },
+              textTransform: 'none'
+            }}
           >
-            {isSendingEmail ? (
-              <>
-                <CircularProgress size={16} sx={{ mr: 1, color: 'white' }} />
-                Sending...
-              </>
-            ) : (
-              'Send Reset Link'
-            )}
+            {isSendingEmail ? <CircularProgress size={20} color="inherit" /> : 'Send Reset Link'}
           </Button>
         </DialogActions>
       </Dialog>

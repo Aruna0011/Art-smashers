@@ -16,17 +16,26 @@ const Register = () => {
     setError('');
   };
 
+  const validateEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const validatePassword = (password) => {
+    return password.length >= 6;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.name || !formData.email || !formData.password) {
       setError('Please fill in all required fields');
       return;
     }
-    if (!userService.validateEmail(formData.email)) {
+    if (!validateEmail(formData.email)) {
       setError('Please enter a valid email address');
       return;
     }
-    if (!userService.validatePassword(formData.password)) {
+    if (!validatePassword(formData.password)) {
       setError('Password must be at least 6 characters long');
       return;
     }
@@ -39,7 +48,7 @@ const Register = () => {
         address: 'Address not provided',
         isCampusStudent: isCampusStudent
       };
-      await registerUser(userData);
+      await signUp(userData);
       setError('');
       setTimeout(() => {
         navigate('/profile');
@@ -98,74 +107,70 @@ const Register = () => {
           <ellipse cx="47" cy="24" rx="1" ry="1.5" fill="#222"/>
           <ellipse cx="53" cy="24" rx="1" ry="1.5" fill="#222"/>
           {/* Bee wings */}
-          <ellipse cx="48" cy="19" rx="2" ry="1.2" fill="#b3e5fc" fillOpacity="0.7"/>
-          <ellipse cx="52" cy="19" rx="2" ry="1.2" fill="#b3e5fc" fillOpacity="0.7"/>
+          <ellipse cx="48" cy="18" rx="3" ry="2" fill="#fff" stroke="#222" strokeWidth="0.8"/>
+          <ellipse cx="52" cy="18" rx="3" ry="2" fill="#fff" stroke="#222" strokeWidth="0.8"/>
         </svg>
       </Box>
-      {/* Bee SVG above/right of honey pot */}
-      <Box sx={{ position: 'absolute', top: 10, right: 80, zIndex: 3 }}>
-        <svg width="38" height="32" viewBox="0 0 38 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <ellipse cx="19" cy="20" rx="12" ry="8" fill="#fff" stroke="#222" strokeWidth="1.2"/>
-          <ellipse cx="19" cy="24" rx="10" ry="8" fill="#ffe066" stroke="#222" strokeWidth="1.2"/>
-          <line x1="9" y1="24" x2="29" y2="24" stroke="#222" strokeWidth="1.2"/>
-          <ellipse cx="13" cy="24" rx="2" ry="3" fill="#222"/>
-          <ellipse cx="25" cy="24" rx="2" ry="3" fill="#222"/>
-          <ellipse cx="15" cy="15" rx="4" ry="2.4" fill="#b3e5fc" fillOpacity="0.7"/>
-          <ellipse cx="23" cy="15" rx="4" ry="2.4" fill="#b3e5fc" fillOpacity="0.7"/>
-        </svg>
-      </Box>
-      {/* Snail SVG below/left of honey pot */}
-      <Box sx={{ position: 'absolute', top: 80, right: 100, zIndex: 2 }}>
-        <svg width="60" height="45" viewBox="0 0 80 60" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <ellipse cx="40" cy="40" rx="24" ry="16" fill="#f7e06e" stroke="#bfa900" strokeWidth="2"/>
-          <circle cx="56" cy="40" r="12" fill="#f7b36e" stroke="#bfa900" strokeWidth="2"/>
-          <circle cx="62" cy="32" r="4" fill="#fff" stroke="#bfa900" strokeWidth="1.5"/>
-          <circle cx="62" cy="32" r="1.5" fill="#333"/>
-          <rect x="60" y="20" width="2" height="10" rx="1" fill="#bfa900"/>
-          <rect x="66" y="20" width="2" height="10" rx="1" fill="#bfa900"/>
-          <circle cx="61" cy="20" r="1.5" fill="#333"/>
-          <circle cx="67" cy="20" r="1.5" fill="#333"/>
-        </svg>
-      </Box>
-      <Card sx={{ width: 370, maxWidth: '95vw', boxShadow: 8, borderRadius: 3, p: 3 }}>
-        <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', p: 0 }}>
-          <Typography variant="h5" sx={{ fontWeight: 700, mb: 1, textAlign: 'center' }}>Create a new account</Typography>
-          <Typography variant="body2" sx={{ textAlign: 'center', mb: 2 }}>
-            Already have an account?{' '}
-            <Link to="/login" style={{ color: '#6a11cb', fontWeight: 600, textDecoration: 'none' }}>Login</Link>
-          </Typography>
-          {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-          <Box component="form" onSubmit={handleSubmit} sx={{ width: '100%' }}>
+      {/* Main Register Card */}
+      <Card sx={{ 
+        maxWidth: 450, 
+        width: '90%', 
+        borderRadius: 4, 
+        boxShadow: '0 8px 32px rgba(0,0,0,0.1)', 
+        backdropFilter: 'blur(10px)',
+        backgroundColor: 'rgba(255,255,255,0.95)',
+        zIndex: 2
+      }}>
+        <Box sx={{ p: 4 }}>
+          {/* Header */}
+          <Box sx={{ textAlign: 'center', mb: 3 }}>
+            <Typography variant="h4" component="h1" sx={{ fontWeight: 700, color: '#6a11cb', mb: 1 }}>
+              Join Art Smashers
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Create your account to start exploring amazing artworks
+            </Typography>
+          </Box>
+
+          {/* Error Alert */}
+          {error && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {error}
+            </Alert>
+          )}
+
+          {/* Register Form */}
+          <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2 }}>
             <TextField
               fullWidth
-              label="Name"
+              label="Full Name"
               name="name"
               value={formData.name}
               onChange={handleInputChange}
-              margin="normal"
               required
-              autoComplete="name"
               sx={{ mb: 2 }}
               InputProps={{
                 startAdornment: (
-                  <InputAdornment position="start"><Person /></InputAdornment>
+                  <InputAdornment position="start">
+                    <Person sx={{ color: '#6a11cb' }} />
+                  </InputAdornment>
                 ),
               }}
             />
             <TextField
               fullWidth
-              label="Email address"
+              label="Email"
               name="email"
               type="email"
               value={formData.email}
               onChange={handleInputChange}
-              margin="normal"
               required
-              autoComplete="email"
               sx={{ mb: 2 }}
               InputProps={{
                 startAdornment: (
-                  <InputAdornment position="start"><Email /></InputAdornment>
+                  <InputAdornment position="start">
+                    <Email sx={{ color: '#6a11cb' }} />
+                  </InputAdornment>
                 ),
               }}
             />
@@ -176,13 +181,13 @@ const Register = () => {
               type={showPassword ? 'text' : 'password'}
               value={formData.password}
               onChange={handleInputChange}
-              margin="normal"
               required
-              autoComplete="new-password"
               sx={{ mb: 2 }}
               InputProps={{
                 startAdornment: (
-                  <InputAdornment position="start"><Lock /></InputAdornment>
+                  <InputAdornment position="start">
+                    <Lock sx={{ color: '#6a11cb' }} />
+                  </InputAdornment>
                 ),
                 endAdornment: (
                   <InputAdornment position="end">
@@ -193,19 +198,47 @@ const Register = () => {
                 ),
               }}
             />
+
+            {/* Campus Student Checkbox */}
             <FormControlLabel
-              control={<Checkbox checked={isCampusStudent} onChange={e => setIsCampusStudent(e.target.checked)} color="primary" />}
-              label={<Typography variant="body2">I am a campus student</Typography>}
-              sx={{ mb: 1, mt: 1 }}
+              control={
+                <Checkbox
+                  checked={isCampusStudent}
+                  onChange={(e) => setIsCampusStudent(e.target.checked)}
+                  sx={{ '&.Mui-checked': { color: '#6a11cb' } }}
+                />
+              }
+              label="I am a campus student"
+              sx={{ mb: 3 }}
             />
-            {isCampusStudent && (
-              <Alert severity="info" sx={{ mb: 2, fontWeight: 500, textAlign: 'center' }}>
-                Note: The 10% discount is available only for students of Government College for Women, Sector 14, Gurugram.
-              </Alert>
-            )}
-            <Button type="submit" fullWidth variant="contained" size="large" sx={{ background: 'linear-gradient(90deg, #6a11cb 0%, #a259e6 100%)', color: '#fff', fontWeight: 600, fontSize: 16, boxShadow: 2, py: 1.5, mb: 1, mt: 1 }}>
-              Register
+
+            {/* Register Button */}
+            <Button
+              type="submit"
+              fullWidth
+              variant="contained"
+              sx={{
+                py: 1.5,
+                backgroundColor: '#6a11cb',
+                '&:hover': { backgroundColor: '#5a0cb8' },
+                borderRadius: 2,
+                textTransform: 'none',
+                fontSize: '1.1rem',
+                fontWeight: 600
+              }}
+            >
+              Create Account
             </Button>
+
+            {/* Login Link */}
+            <Box sx={{ textAlign: 'center', mt: 3 }}>
+              <Typography variant="body2" color="text.secondary">
+                Already have an account?{' '}
+                <Link to="/login" style={{ color: '#6a11cb', textDecoration: 'none', fontWeight: 600 }}>
+                  Sign in here
+                </Link>
+              </Typography>
+            </Box>
           </Box>
         </Box>
       </Card>
