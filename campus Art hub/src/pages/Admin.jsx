@@ -1059,7 +1059,7 @@ const Admin = () => {
     const nameLower = user.name.toLowerCase();
     return !emailLower.startsWith('test@') && !nameLower.includes('test');
   });
-  const messages = contactMessageStore.getAllMessages();
+  const messages = contactMessageStore.getMessages();
 
   const handleEditUser = (user) => {
     setEditingUser(user);

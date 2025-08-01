@@ -45,6 +45,11 @@ class ContactMessageStore {
     return this.messages;
   }
 
+  // Alias for getMessages (for consistency)
+  getAllMessages() {
+    return this.messages;
+  }
+
   // Delete a message
   deleteMessage(messageId) {
     this.messages = this.messages.filter(msg => msg.id !== messageId);
