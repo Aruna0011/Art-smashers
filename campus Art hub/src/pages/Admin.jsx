@@ -55,8 +55,6 @@ import { getAllCategories, addCategory, updateCategory, deleteCategory } from '.
 import { getAllUsers, updateUser, deleteUser } from '../utils/userApi';
 import { getAllOrders, updateOrder } from '../utils/ordersApi';
 import { uploadProductImage } from '../utils/imageUpload';
-import userService from '../utils/userService';
-import contactMessageStore from '../utils/contactMessageStore';
 import { supabase } from '../utils/supabaseClient';
 
 // Dynamically import all images from assets folder
@@ -716,7 +714,7 @@ const Admin = () => {
   );
 
   const renderOrders = () => {
-    const users = userService.getAllUsers();
+    const { data: users } = supabase.from('users').select('*');
     return (
       <Card>
         <CardContent>
@@ -740,7 +738,7 @@ const Admin = () => {
               </TableHead>
               <TableBody>
                 {orders.map((order, idx) => {
-                  const user = users.find(u => u.email === (order.customer?.email || order.clientEmail));
+                  const user = users?.find(u => u.email === (order.customer?.email || order.clientEmail));
                   return (
                     <TableRow key={order.id || idx}>
                       <TableCell>{order.placedAt ? new Date(order.placedAt).toLocaleString() : '-'}</TableCell>
@@ -1053,13 +1051,8 @@ const Admin = () => {
   const [editingUserData, setEditingUserData] = useState({});
   const [refreshClients, setRefreshClients] = useState(0);
 
-  const filteredUsers = userService.getAllUsers().filter(user => {
-    if (!user.email || !user.name) return false;
-    const emailLower = user.email.toLowerCase();
-    const nameLower = user.name.toLowerCase();
-    return !emailLower.startsWith('test@') && !nameLower.includes('test');
-  });
-  const messages = contactMessageStore.getMessages();
+  const filteredUsers = supabase.from('users').select('*').then(res => res.data);
+  const messages = supabase.from('contact_messages').select('*').then(res => res.data);
 
   const handleEditUser = (user) => {
     setEditingUser(user);
@@ -1269,7 +1262,7 @@ const Admin = () => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {filteredUsers.map((user) => (
+                  {filteredUsers?.map((user) => (
                     <TableRow key={user.id}>
                       <TableCell>{user.name}</TableCell>
                       <TableCell>{user.email}</TableCell>

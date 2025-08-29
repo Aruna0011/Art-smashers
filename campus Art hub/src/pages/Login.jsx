@@ -34,10 +34,8 @@ const Login = () => {
       const result = await signIn({ email: trimmedEmail, password: trimmedPassword });
       setError('');
       if (result && result.user) {
-        // Check if user is admin (stored in user metadata or local storage)
-        const isAdmin = result.user.isAdmin || result.user.user_metadata?.isAdmin;
-        if (isAdmin) {
-          localStorage.setItem('adminAuthenticated', 'true');
+        // Check if user is admin from local storage
+        if (result.user && result.user.is_admin) {
           navigate('/admin');
         } else {
           navigate('/profile');

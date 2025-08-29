@@ -1,73 +1,32 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Box,
-  Container,
-  Typography,
-  Grid,
-  Card,
-  CardContent,
-  CardMedia,
-  Button,
-  IconButton,
-  TextField,
-  Divider,
-  Chip,
-  Paper,
-  Alert,
+  Box, Container, Typography, Grid, Card, CardContent, CardMedia, Button, IconButton, TextField, Divider, Chip, Paper, Alert,
 } from '@mui/material';
 import {
-  Add,
-  Remove,
-  Delete,
-  ShoppingCart,
-  ArrowBack,
-  LocalShipping,
-  Payment,
+  Add, Remove, Delete, ShoppingCart, ArrowBack, LocalShipping, Payment,
 } from '@mui/icons-material';
 import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import productStore from '../utils/productStore';
-import userService from '../utils/userService';
 import { getCart, addToCart, updateCartItem, removeFromCart, clearCart } from '../utils/cartApi';
+import { supabase } from '../utils/supabaseClient';
 
 const Cart = () => {
   const navigate = useNavigate();
   const [cartItems, setCartItems] = useState([]);
 
   useEffect(() => {
-    // Always sync cart items with latest product stock
-    const items = getCart();
-    // For each item, if quantity > product stock, reduce to stock
-    const updatedItems = items.map(item => {
-      const product = productStore.getProductById(item.id);
-      const stock = product ? product.stock : 1;
-      if (item.quantity > stock) {
-        updateCartItem(item.id, stock);
-        return { ...item, quantity: stock };
+    // Fetch user from Supabase Auth
+    const fetchCart = async () => {
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (error || !user) {
+        navigate('/login');
+        return;
       }
-      return item;
-    });
-    setCartItems(updatedItems);
-
-    // Listen for cart updates
-    const handleCartUpdate = (items) => {
-      // Same logic: auto-reduce if quantity > stock
-      const updated = items.map(item => {
-        const product = productStore.getProductById(item.id);
-        const stock = product ? product.stock : 1;
-        if (item.quantity > stock) {
-          updateCartItem(item.id, stock);
-          return { ...item, quantity: stock };
-        }
-        return item;
-      });
-      setCartItems(updated);
+      const items = await getCart(user.id);
+      setCartItems(items);
     };
-    // No need to add listener here as getCart is a one-time fetch
-    return () => {
-      // No need to remove listener here
-    };
-  }, []);
+    fetchCart();
+  }, [navigate]);
 
   const updateQuantity = (id, newQuantity) => {
     // Get the product's stock

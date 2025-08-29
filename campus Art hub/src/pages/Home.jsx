@@ -32,7 +32,6 @@ import { Link } from 'react-router-dom';
 import { getAllProducts } from '../utils/productApi';
 import { getAllCategories } from '../utils/categoryApi';
 import { useRef } from 'react';
-import { supabase } from '../utils/supabaseClient';
 
 const Home = () => {
   const theme = useTheme();
@@ -56,23 +55,15 @@ const Home = () => {
 
   useEffect(() => {
     const loadImages = async () => {
-      const { data, error } = await supabase.from('images').select('*').order('order', { ascending: true });
-      if (!error && data) {
-        setSlides(data.filter(img => img.type === 'carousel'));
-        setWallImages(data.filter(img => img.type === 'wall'));
-        setOfferImages(data.filter(img => img.type === 'offer'));
-      }
+      const images = JSON.parse(localStorage.getItem('art_hub_image_management') || '[]');
+      const carouselImages = images.filter(img => img.type === 'carousel');
+      const wallImgs = images.filter(img => img.type === 'wall');
+      const offerImgs = images.filter(img => img.type === 'offer');
+      setSlides(carouselImages);
+      setWallImages(wallImgs);
+      setOfferImages(offerImgs);
     };
     loadImages();
-
-    // Real-time subscription for images
-    const imageSub = supabase
-      .channel('images')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'images' }, loadImages)
-      .subscribe();
-    return () => {
-      supabase.removeChannel(imageSub);
-    };
   }, []);
 
   // Auto-slide functionality
@@ -98,48 +89,29 @@ const Home = () => {
 
   useEffect(() => {
     const loadImageMeta = async () => {
-      const { data, error } = await supabase.from('images').select('*');
-      if (!error && data) {
-        setCarouselText(data.find(img => img.type === 'carousel' && img.text) ? data.find(img => img.type === 'carousel' && img.text).text : '');
-        setWallText(data.find(img => img.type === 'wall' && img.text) ? data.find(img => img.type === 'wall' && img.text).text : '');
-        setOfferText(data.find(img => img.type === 'offer' && img.text) ? data.find(img => img.type === 'offer' && img.text).text : '');
-        setWallLabels(data.filter(img => img.type === 'wall').map(img => img.label || ''));
-        setOfferLabels(data.filter(img => img.type === 'offer').map(img => img.label || ''));
-      }
+      const images = JSON.parse(localStorage.getItem('art_hub_image_management') || '[]');
+      setCarouselText(images.find(img => img.type === 'carousel' && img.section_text)?.section_text || '');
+      setWallText(images.find(img => img.type === 'wall' && img.section_text)?.section_text || '');
+      setOfferText(images.find(img => img.type === 'offer' && img.section_text)?.section_text || '');
+      setWallLabels(images.filter(img => img.type === 'wall').map(img => img.label || ''));
+      setOfferLabels(images.filter(img => img.type === 'offer').map(img => img.label || ''));
     };
     loadImageMeta();
-    const imageMetaSub = supabase
-      .channel('images')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'images' }, loadImageMeta)
-      .subscribe();
-    return () => {
-      supabase.removeChannel(imageMetaSub);
-    };
   }, []);
 
   useEffect(() => {
     const loadData = async () => {
-      const allCategories = await getAllCategories();
-      const allProducts = await getAllProducts();
-      setCategories(allCategories);
-      const featured = allProducts.slice(0, 4);
-      setFeaturedProducts(featured);
+      try {
+        const allCategories = await getAllCategories();
+        const allProducts = await getAllProducts();
+        setCategories(allCategories);
+        const featured = allProducts.slice(0, 4);
+        setFeaturedProducts(featured);
+      } catch (error) {
+        console.error('Error loading data:', error);
+      }
     };
     loadData();
-
-    // --- Real-time subscriptions ---
-    const categorySub = supabase
-      .channel('categories')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, loadData)
-      .subscribe();
-    const productSub = supabase
-      .channel('products')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, loadData)
-      .subscribe();
-    return () => {
-      supabase.removeChannel(categorySub);
-      supabase.removeChannel(productSub);
-    };
   }, []);
 
   const getCategoryIcon = (categoryName) => {
@@ -171,7 +143,7 @@ const Home = () => {
         mb: { xs: 2, md: 3 },
       }}>
         {/* Slides */}
-        {slides.map((slide, index) => (
+        {slides.length > 0 ? slides.map((slide, index) => (
           <Link
             to="/products"
             key={index}
@@ -197,7 +169,11 @@ const Home = () => {
               }}
             />
           </Link>
-        ))}
+        )) : (
+          <Box sx={{ p: 4, textAlign: 'center', color: '#666' }}>
+            No carousel images available
+          </Box>
+        )}
         {/* Removed navigation arrows and dots */}
       </Box>
 

@@ -47,37 +47,29 @@ const AdminLogin = () => {
       setError('Please fill in all fields');
       return;
     }
-
     try {
       // Use Supabase authentication
       const { data, error } = await supabase.auth.signInWithPassword({
         email: formData.email,
         password: formData.password,
       });
-
       if (error) {
         setError('Invalid email or password');
         toast.error('Invalid email or password');
         return;
       }
-
       // Check if user is admin by querying the users table
       const { data: userData, error: userError } = await supabase
         .from('users')
-        .select('*')
-        .eq('email', formData.email)
+        .select('is_admin')
+        .eq('id', data.user.id)
         .single();
-
       if (userError || !userData || !userData.is_admin) {
-        setError('Access denied. Admin privileges required.');
         toast.error('Access denied. Admin privileges required.');
-        // Sign out the user since they're not admin
         await supabase.auth.signOut();
         return;
       }
-
       toast.success('Login successful! Welcome to Admin Panel');
-      localStorage.setItem('adminAuthenticated', 'true');
       navigate('/admin');
     } catch (error) {
       console.error('Login error:', error);

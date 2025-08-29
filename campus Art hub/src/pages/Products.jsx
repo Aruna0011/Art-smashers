@@ -42,7 +42,6 @@ import {
 import { Link, useLocation } from 'react-router-dom';
 import { getAllProducts } from '../utils/productApi';
 import { getAllCategories } from '../utils/categoryApi';
-import { supabase } from '../utils/supabaseClient';
 
 const Products = () => {
   const theme = useTheme();
@@ -66,23 +65,7 @@ const Products = () => {
       setLoading(false);
     };
     loadData();
-
-    // --- Real-time subscriptions ---
-    const categorySub = supabase
-      .channel('categories')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, loadData)
-      .subscribe();
-    const productSub = supabase
-      .channel('products')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, loadData)
-      .subscribe();
-    return () => {
-      supabase.removeChannel(categorySub);
-      supabase.removeChannel(productSub);
-    };
   }, []);
-
-  // REMOVE all localStorage usage for wishlist. Use Supabase or in-memory state only.
 
   // Read category filter from URL query parameters
   useEffect(() => {
@@ -161,7 +144,7 @@ const Products = () => {
       updated = wishlist.filter(item => item.id !== product.id);
     }
     setWishlist(updated);
-    // localStorage.setItem('wishlist', JSON.stringify(updated)); // REMOVED
+    // Wishlist handled in-memory only
   };
 
   if (loading) {

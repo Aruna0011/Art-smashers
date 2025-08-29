@@ -1,110 +1,77 @@
-import { supabase } from './supabaseClient';
-
-// Fallback product data for when Supabase is not configured
-const fallbackProducts = [
+// Mock products data for local storage
+const defaultProducts = [
   {
-    id: 1,
-    name: "Abstract Sunset",
-    category: "Paintings",
-    price: 2500,
+    id: '1',
+    name: 'Abstract Canvas Painting',
+    description: 'Beautiful abstract artwork on canvas',
+    price: 299.99,
     stock: 5,
-    description: "Beautiful abstract painting inspired by sunset colors",
-    artist: "Sarah Johnson",
-    images: ["/src/assets/design 1.png"],
-    featured: true
+    category: 'Paintings',
+    images: ['https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=400'],
+    created_at: new Date().toISOString()
   },
   {
-    id: 2,
-    name: "Modern Sculpture",
-    category: "Sculptures",
-    price: 5000,
-    stock: 2,
-    description: "Contemporary metal sculpture with geometric patterns",
-    artist: "Mike Chen",
-    images: ["/src/assets/design 2.jpg"],
-    featured: true
+    id: '2',
+    name: 'Ceramic Sculpture',
+    description: 'Handcrafted ceramic sculpture',
+    price: 199.99,
+    stock: 3,
+    category: 'Sculptures',
+    images: ['https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400'],
+    created_at: new Date().toISOString()
   },
   {
-    id: 3,
-    name: "Digital Art Collection",
-    category: "Digital Art",
-    price: 1500,
+    id: '3',
+    name: 'Digital Art Print',
+    description: 'High-quality digital art print',
+    price: 79.99,
     stock: 10,
-    description: "Digital artwork created with modern techniques",
-    artist: "Alex Rivera",
-    images: ["/src/assets/design 3.jpg"],
-    featured: false
+    category: 'Digital Art',
+    images: ['https://images.unsplash.com/photo-1549490349-8643362247b5?w=400'],
+    created_at: new Date().toISOString()
   }
 ];
 
-export async function getAllProducts() {
-  try {
-    let { data, error } = await supabase.from('products').select('*');
-    if (error) throw error;
-    return data || fallbackProducts;
-  } catch (error) {
-    console.error('Supabase getAllProducts error:', error);
-    // Return fallback data if Supabase is not configured
-    if (error.message.includes('Invalid API key') || error.message.includes('fetch')) {
-      return fallbackProducts;
-    }
-    throw error;
+// Initialize products if not exists
+function initializeProducts() {
+  if (!localStorage.getItem('art_hub_products')) {
+    localStorage.setItem('art_hub_products', JSON.stringify(defaultProducts));
   }
+}
+
+export async function getAllProducts() {
+  initializeProducts();
+  const products = JSON.parse(localStorage.getItem('art_hub_products') || '[]');
+  return products;
 }
 
 export async function addProduct(product) {
-  try {
-    let { data, error } = await supabase.from('products').insert([product]);
-    if (error) throw error;
-    return data[0];
-  } catch (error) {
-    console.error('Supabase addProduct error:', error);
-    // Fallback to local storage
-    if (error.message.includes('Invalid API key') || error.message.includes('fetch')) {
-      const products = JSON.parse(localStorage.getItem('art_hub_products') || '[]');
-      const newProduct = { ...product, id: Date.now() };
-      products.push(newProduct);
-      localStorage.setItem('art_hub_products', JSON.stringify(products));
-      return newProduct;
-    }
-    throw error;
-  }
+  initializeProducts();
+  const products = JSON.parse(localStorage.getItem('art_hub_products') || '[]');
+  const newProduct = {
+    ...product,
+    id: Date.now().toString(),
+    created_at: new Date().toISOString()
+  };
+  products.push(newProduct);
+  localStorage.setItem('art_hub_products', JSON.stringify(products));
+  return newProduct;
 }
 
 export async function updateProduct(id, updates) {
-  try {
-    let { data, error } = await supabase.from('products').update(updates).eq('id', id);
-    if (error) throw error;
-    return data[0];
-  } catch (error) {
-    console.error('Supabase updateProduct error:', error);
-    // Fallback to local storage
-    if (error.message.includes('Invalid API key') || error.message.includes('fetch')) {
-      const products = JSON.parse(localStorage.getItem('art_hub_products') || '[]');
-      const productIndex = products.findIndex(p => p.id === id);
-      if (productIndex !== -1) {
-        products[productIndex] = { ...products[productIndex], ...updates };
-        localStorage.setItem('art_hub_products', JSON.stringify(products));
-        return products[productIndex];
-      }
-    }
-    throw error;
-  }
+  initializeProducts();
+  const products = JSON.parse(localStorage.getItem('art_hub_products') || '[]');
+  const index = products.findIndex(p => p.id === id);
+  if (index === -1) throw new Error('Product not found');
+  
+  products[index] = { ...products[index], ...updates, updated_at: new Date().toISOString() };
+  localStorage.setItem('art_hub_products', JSON.stringify(products));
+  return products[index];
 }
 
 export async function deleteProduct(id) {
-  try {
-    let { error } = await supabase.from('products').delete().eq('id', id);
-    if (error) throw error;
-  } catch (error) {
-    console.error('Supabase deleteProduct error:', error);
-    // Fallback to local storage
-    if (error.message.includes('Invalid API key') || error.message.includes('fetch')) {
-      const products = JSON.parse(localStorage.getItem('art_hub_products') || '[]');
-      const filteredProducts = products.filter(p => p.id !== id);
-      localStorage.setItem('art_hub_products', JSON.stringify(filteredProducts));
-    } else {
-      throw error;
-    }
-  }
-} 
+  initializeProducts();
+  const products = JSON.parse(localStorage.getItem('art_hub_products') || '[]');
+  const filteredProducts = products.filter(p => p.id !== id);
+  localStorage.setItem('art_hub_products', JSON.stringify(filteredProducts));
+}

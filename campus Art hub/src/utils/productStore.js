@@ -1,98 +1,48 @@
-// Product Store for managing product state
+// Local storage-based product store
+import { getAllProducts } from './productApi';
+
 class ProductStore {
   constructor() {
-    this.productsKey = 'art_hub_products';
-    this.products = this.loadFromStorage();
+    this.products = [];
+    this.initialized = false;
   }
 
-  // Load products from localStorage
-  loadFromStorage() {
-    try {
-      const stored = localStorage.getItem(this.productsKey);
-      return stored ? JSON.parse(stored) : [];
-    } catch (error) {
-      console.error('Error loading products from storage:', error);
-      return [];
+  async initialize() {
+    if (!this.initialized) {
+      this.products = await getAllProducts();
+      this.initialized = true;
     }
   }
 
-  // Save products to localStorage
-  saveToStorage() {
-    try {
-      localStorage.setItem(this.productsKey, JSON.stringify(this.products));
-    } catch (error) {
-      console.error('Error saving products to storage:', error);
-    }
-  }
-
-  // Get all products
-  getAllProducts() {
-    return this.products;
-  }
-
-  // Get product by ID
-  getProductById(id) {
+  async getProductById(id) {
+    await this.initialize();
     return this.products.find(product => product.id === id);
   }
 
-  // Add product
-  addProduct(product) {
-    const newProduct = {
-      ...product,
-      id: Date.now(),
-      createdAt: new Date().toISOString()
-    };
-    
-    this.products.push(newProduct);
-    this.saveToStorage();
-    return newProduct;
+  async getAllProducts() {
+    await this.initialize();
+    return this.products;
   }
 
-  // Update product
-  updateProduct(id, updates) {
-    const productIndex = this.products.findIndex(p => p.id === id);
-    if (productIndex !== -1) {
-      this.products[productIndex] = { ...this.products[productIndex], ...updates };
-      this.saveToStorage();
-      return this.products[productIndex];
-    }
-    return null;
-  }
-
-  // Delete product
-  deleteProduct(id) {
-    this.products = this.products.filter(p => p.id !== id);
-    this.saveToStorage();
-  }
-
-  // Get products by category
-  getProductsByCategory(category) {
+  async getProductsByCategory(category) {
+    await this.initialize();
     return this.products.filter(product => product.category === category);
   }
 
-  // Search products
-  searchProducts(query) {
-    const searchTerm = query.toLowerCase();
+  async searchProducts(searchTerm) {
+    await this.initialize();
     return this.products.filter(product => 
-      product.name.toLowerCase().includes(searchTerm) ||
-      product.description.toLowerCase().includes(searchTerm) ||
-      product.artist.toLowerCase().includes(searchTerm)
+      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.description.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }
 
-  // Get featured products
-  getFeaturedProducts() {
-    return this.products.filter(product => product.featured);
-  }
-
-  // Clear all products
-  clearProducts() {
-    this.products = [];
-    this.saveToStorage();
+  // Refresh products from storage
+  async refresh() {
+    this.products = await getAllProducts();
   }
 }
 
-// Create singleton instance
+// Export singleton instance
 const productStore = new ProductStore();
-
-export default productStore; 
+export default productStore;

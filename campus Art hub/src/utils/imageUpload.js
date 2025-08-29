@@ -1,64 +1,23 @@
-import { supabase } from './supabaseClient';
-
+// Local storage-based image upload using base64 encoding
 export async function uploadProductImage(file) {
-  try {
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${Math.random()}.${fileExt}`;
-    const filePath = `product-images/${fileName}`;
-
-    const { error } = await supabase.storage
-      .from('images')
-      .upload(filePath, file);
-
-    if (error) throw error;
-
-    const { data } = supabase.storage
-      .from('images')
-      .getPublicUrl(filePath);
-
-    return data.publicUrl;
-  } catch (error) {
-    console.error('Supabase uploadProductImage error:', error);
-    // Fallback to base64 encoding for local storage
-    if (error.message.includes('Invalid API key') || error.message.includes('fetch')) {
-      return new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onload = () => {
-          resolve(reader.result);
-        };
-        reader.readAsDataURL(file);
-      });
-    }
-    throw error;
-  }
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      resolve(reader.result);
+    };
+    reader.onerror = () => {
+      reject(new Error('Failed to read file'));
+    };
+    reader.readAsDataURL(file);
+  });
 }
 
 export async function deleteProductImage(filePath) {
-  try {
-    const { error } = await supabase.storage
-      .from('images')
-      .remove([filePath]);
-
-    if (error) throw error;
-  } catch (error) {
-    console.error('Supabase deleteProductImage error:', error);
-    // No fallback needed for delete operation
-    if (!error.message.includes('Invalid API key') && !error.message.includes('fetch')) {
-      throw error;
-    }
-  }
+  // No action needed for base64 images stored in local storage
+  console.log('Image deletion not needed for local storage implementation');
 }
 
 export async function getImageUrl(filePath) {
-  try {
-    const { data } = supabase.storage
-      .from('images')
-      .getPublicUrl(filePath);
-
-    return data.publicUrl;
-  } catch (error) {
-    console.error('Supabase getImageUrl error:', error);
-    // Return the filePath as fallback
-    return filePath;
-  }
+  // Return the filePath as-is since it's already a base64 URL or external URL
+  return filePath;
 } 

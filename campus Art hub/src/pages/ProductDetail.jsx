@@ -69,7 +69,7 @@ const ProductDetail = () => {
   const goToNext = () => setCurrentIndex((prev) => (prev + 1) % galleryImages.length);
 
   useEffect(() => {
-    // REMOVE all localStorage usage for wishlist. Use Supabase or in-memory state only.
+    // Wishlist functionality handled in-memory
   }, []);
 
   useEffect(() => {

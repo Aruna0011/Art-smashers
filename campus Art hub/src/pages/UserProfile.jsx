@@ -1,56 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-  Container,
-  Typography,
-  Box,
-  Card,
-  CardContent,
-  Grid,
-  Avatar,
-  Button,
-  Tabs,
-  Tab,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Chip,
-  TextField,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  IconButton,
-  Divider,
-  Paper,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemAvatar,
+  Container, Typography, Box, Card, CardContent, Grid, Avatar, Button, Tabs, Tab, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip, TextField, Dialog, DialogTitle, DialogContent, DialogActions, IconButton, Divider, Paper, List, ListItem, ListItemText, ListItemAvatar,
 } from '@mui/material';
 import {
-  Person,
-  ShoppingCart,
-  Edit,
-  Save,
-  Cancel,
-  Visibility,
-  LocalShipping,
-  Payment,
-  LocationOn,
-  Email,
-  Phone,
-  CalendarToday,
-  AttachMoney,
-  PhotoCamera,
+  Person, ShoppingCart, Edit, Save, Cancel, Visibility, LocalShipping, Payment, LocationOn, Email, Phone, CalendarToday, AttachMoney, PhotoCamera,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import { useEffect } from 'react';
 import toast from 'react-hot-toast';
-import userService from '../utils/userService';
 import { getAllOrders } from '../utils/ordersApi';
+import { getSession } from '../utils/supabaseAuth';
 
 const UserProfile = () => {
   const navigate = useNavigate();
@@ -58,32 +16,33 @@ const UserProfile = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [openOrderDialog, setOpenOrderDialog] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
-
-  // Real user data from user service
-  const [userData, setUserData] = useState(() => {
-    return userService.getCurrentUser();
-  });
-
-  // Replace mock order history with real orders for the current user
+  const [userData, setUserData] = useState(null);
   const [orderHistory, setOrderHistory] = useState([]);
 
   useEffect(() => {
-    console.log('UserProfile: userData =', userData);
-    if (!userData) {
-      console.log('UserProfile: No user data, redirecting to login');
-      navigate('/login');
-    } else {
-      console.log('UserProfile: User data found, rendering profile');
-    }
-  }, [userData, navigate]);
+    const fetchUser = async () => {
+      const session = await getSession();
+      if (!session || !session.user) {
+        navigate('/login');
+        return;
+      }
+      // Get user data from local storage
+      const currentUser = JSON.parse(localStorage.getItem('art_hub_current_user'));
+      if (!currentUser) {
+        navigate('/login');
+        return;
+      }
+      setUserData(currentUser);
+    };
+    fetchUser();
+  }, [navigate]);
 
   useEffect(() => {
     if (userData) {
-      // Get all orders and filter for current user
       const fetchOrders = async () => {
         try {
           const allOrders = await getAllOrders();
-          const userOrders = allOrders.filter(order => order.userId === userData.id);
+          const userOrders = allOrders.filter(order => order.user_id === userData.id);
           setOrderHistory(userOrders);
         } catch (error) {
           toast.error('Failed to fetch order history: ' + error.message);
@@ -93,33 +52,16 @@ const UserProfile = () => {
     }
   }, [userData]);
 
-  // Prevent rendering if not logged in
-  if (!userData) {
-    console.log('UserProfile: Returning null - no user data');
-    return null;
-  }
+  if (!userData) return null;
 
   const [editData, setEditData] = useState(userData ? { ...userData } : {});
 
-  const handleTabChange = (event, newValue) => {
-    setActiveTab(newValue);
-  };
-
+  const handleTabChange = (event, newValue) => setActiveTab(newValue);
   const handleEditProfile = () => {
     setEditData({ ...userData });
     setIsEditing(true);
   };
-
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setEditData({ ...editData, profileImage: reader.result });
-      };
-      reader.readAsDataURL(file);
-    }
-  };
+  const handleImageChange = (e) => {};
 
   const handleSaveProfile = () => {
     try {

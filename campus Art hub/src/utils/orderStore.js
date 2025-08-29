@@ -1,75 +1,57 @@
-// Order Store for managing order state
+// Local storage-based order store
+import { createOrder, updateOrder, getAllOrders } from './ordersApi';
+
 class OrderStore {
   constructor() {
-    this.orderKey = 'campus-art-hub-order';
-    this.currentOrder = this.loadFromStorage();
+    this.orders = [];
+    this.initialized = false;
   }
 
-  // Load order from localStorage
-  loadFromStorage() {
-    try {
-      const stored = localStorage.getItem(this.orderKey);
-      return stored ? JSON.parse(stored) : null;
-    } catch (error) {
-      console.error('Error loading order from storage:', error);
-      return null;
+  async initialize() {
+    if (!this.initialized) {
+      this.orders = await getAllOrders();
+      this.initialized = true;
     }
   }
 
-  // Save order to localStorage
-  saveToStorage() {
-    try {
-      if (this.currentOrder) {
-        localStorage.setItem(this.orderKey, JSON.stringify(this.currentOrder));
-      } else {
-        localStorage.removeItem(this.orderKey);
-      }
-    } catch (error) {
-      console.error('Error saving order to storage:', error);
+  async addOrder(orderData) {
+    const order = await createOrder(orderData);
+    await this.initialize();
+    this.orders.push(order);
+    return order;
+  }
+
+  async updateOrder(orderId, updates) {
+    const updatedOrder = await updateOrder(orderId, updates);
+    await this.initialize();
+    const index = this.orders.findIndex(order => order.id === orderId);
+    if (index !== -1) {
+      this.orders[index] = updatedOrder;
     }
+    return updatedOrder;
   }
 
-  // Set current order
-  setOrder(order) {
-    this.currentOrder = order;
-    this.saveToStorage();
+  async getAllOrders() {
+    await this.initialize();
+    return this.orders;
   }
 
-  // Get current order
-  getOrder() {
-    return this.currentOrder;
+  async getOrderById(orderId) {
+    await this.initialize();
+    return this.orders.find(order => order.id === orderId);
   }
 
-  // Clear current order
-  clearOrder() {
-    this.currentOrder = null;
-    this.saveToStorage();
+  async getUserOrders(userId) {
+    await this.initialize();
+    return this.orders.filter(order => order.user_id === userId || order.customer?.id === userId);
   }
 
-  // Update order status
-  updateOrderStatus(status) {
-    if (this.currentOrder) {
-      this.currentOrder.status = status;
-      this.saveToStorage();
-    }
-  }
-
-  // Add payment information
-  addPaymentInfo(paymentInfo) {
-    if (this.currentOrder) {
-      this.currentOrder.paymentInfo = paymentInfo;
-      this.saveToStorage();
-    }
-  }
-
-  // Add shipping information
-  addShippingInfo(shippingInfo) {
-    if (this.currentOrder) {
-      this.currentOrder.shippingInfo = shippingInfo;
-      this.saveToStorage();
-    }
+  // Refresh orders from storage
+  async refresh() {
+    this.orders = await getAllOrders();
   }
 }
 
-// Create singleton instance
-export const orderStore = new OrderStore(); 
+// Export singleton instance
+const orderStore = new OrderStore();
+export { orderStore };
