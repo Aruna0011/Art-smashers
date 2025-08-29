@@ -35,23 +35,31 @@ export async function signUp({ email, password, ...userData }) {
 }
 
 export async function signIn({ email, password }) {
-  try {
-    const users = JSON.parse(localStorage.getItem('art_hub_users') || '[]');
-    const user = users.find(u => u.email === email && u.password === password);
-    
-    if (!user) {
-      throw new Error('Invalid email or password');
-    }
-    
-    // Create session without password
+  let users = JSON.parse(localStorage.getItem('art_hub_users') || '[]');
+  
+  // Initialize with default admin user if no users exist
+  if (users.length === 0) {
+    const defaultAdmin = {
+      id: 'admin_1',
+      email: 'admin@campusarthub.com',
+      password: 'admin123',
+      name: 'Admin User',
+      is_admin: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+    users = [defaultAdmin];
+    localStorage.setItem('art_hub_users', JSON.stringify(users));
+  }
+  
+  const user = users.find(u => u.email === email && u.password === password);
+  if (user) {
     const sessionUser = { ...user };
     delete sessionUser.password;
     localStorage.setItem('art_hub_current_user', JSON.stringify(sessionUser));
-    
     return { user: sessionUser };
-  } catch (error) {
-    console.error('Auth signIn error:', error);
-    throw error;
+  } else {
+    return { error: 'Invalid credentials' };
   }
 }
 
