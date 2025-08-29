@@ -116,4 +116,6 @@ class CartStore {
 }
 
 // Create singleton instance
-export const cartStore = new CartStore(); 
+const cartStore = new CartStore();
+export { cartStore };
+export default cartStore;

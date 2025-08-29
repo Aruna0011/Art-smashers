@@ -1,21 +1,24 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
 import {
   Box,
   Typography,
-  Button,
+  Grid,
   Card,
   CardContent,
   CardMedia,
-  Grid,
+  Button,
   Container,
-  Chip,
   IconButton,
   Dialog,
   DialogContent,
   DialogActions,
+  useMediaQuery,
+  useTheme,
+  Chip,
+  Avatar,
   Fade,
-  TextField,
+  Slide,
+  Zoom,
 } from '@mui/material';
 import {
   ArrowForward,
@@ -119,14 +122,47 @@ const Home = () => {
   useEffect(() => {
     const loadData = async () => {
       try {
+        console.log('🏠 Home page loading data...');
         const [categoriesData, productsData] = await Promise.all([
           unifiedService.getAllCategories(),
           unifiedService.getAllProducts()
         ]);
-        setCategories(categoriesData);
-        setFeaturedProducts(productsData.slice(0, 8)); // Show first 8 products as featured
+        console.log('📂 Categories loaded:', categoriesData.length, categoriesData);
+        console.log('🛍️ Products loaded:', productsData.length, productsData);
+        
+        // If no data from Supabase, seed with initial data
+        if (categoriesData.length === 0 && productsData.length === 0) {
+          console.log('🌱 No data found, seeding with initial data...');
+          const { seedCategories, seedProducts, seedLocalStorage } = await import('../utils/seedData');
+          seedLocalStorage();
+          setCategories(seedCategories);
+          setFeaturedProducts(seedProducts.slice(0, 8));
+        } else {
+          setCategories(categoriesData);
+          setFeaturedProducts(productsData.slice(0, 8));
+        }
       } catch (error) {
-        console.error('Error loading data:', error);
+        console.error('❌ Error loading data:', error);
+        console.error('Full error details:', error);
+        // Fallback to localStorage or seed data
+        try {
+          const localCategories = JSON.parse(localStorage.getItem('art_hub_categories') || '[]');
+          const localProducts = JSON.parse(localStorage.getItem('art_hub_products') || '[]');
+          
+          if (localCategories.length === 0 && localProducts.length === 0) {
+            console.log('🌱 No local data, seeding with initial data...');
+            const { seedCategories, seedProducts, seedLocalStorage } = await import('../utils/seedData');
+            seedLocalStorage();
+            setCategories(seedCategories);
+            setFeaturedProducts(seedProducts.slice(0, 8));
+          } else {
+            console.log('📦 Using localStorage fallback - Categories:', localCategories.length, 'Products:', localProducts.length);
+            setCategories(localCategories);
+            setFeaturedProducts(localProducts.slice(0, 8));
+          }
+        } catch (localError) {
+          console.error('❌ localStorage fallback also failed:', localError);
+        }
       }
     };
     loadData();

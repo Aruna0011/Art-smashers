@@ -13,6 +13,138 @@ class UnifiedService {
     return !!(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY);
   }
 
+  // ========================
+  // CATEGORY METHODS
+  // ========================
+  
+  // Get all categories with fallback
+  async getAllCategories() {
+    if (this.useSupabase && this.isSupabaseConfigured()) {
+      try {
+        const categories = await categoryApi.getAllCategories();
+        // Update local storage as fallback
+        if (categories && categories.length > 0) {
+          localStorage.setItem('art_hub_categories', JSON.stringify(categories));
+        }
+        return categories;
+      } catch (error) {
+        console.error('Supabase categories error, falling back to localStorage:', error);
+        return this.getLocalCategories();
+      }
+    }
+    return this.getLocalCategories();
+  }
+
+  // Add new category with fallback
+  async addCategory(category) {
+    console.log('Adding category:', category);
+    if (this.useSupabase && this.isSupabaseConfigured()) {
+      console.log('Using Supabase for addCategory');
+      try {
+        const categoryData = {
+          ...category,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          is_active: true
+        };
+        console.log('Sending to Supabase:', categoryData);
+        const result = await categoryApi.addCategory(categoryData);
+        console.log('Supabase response:', result);
+        // Also save to localStorage for fallback
+        this.addLocalCategory(result);
+        return result;
+      } catch (error) {
+        console.error('Supabase add category error, using localStorage:', error);
+        return this.addLocalCategory(category);
+      }
+    }
+    return this.addLocalCategory(category);
+  }
+
+  // Update category with fallback
+  async updateCategory(id, updates) {
+    if (this.useSupabase && this.isSupabaseConfigured()) {
+      try {
+        const result = await categoryApi.updateCategory(id, {
+          ...updates,
+          updated_at: new Date().toISOString()
+        });
+        // Also update localStorage
+        this.updateLocalCategory(id, updates);
+        return result;
+      } catch (error) {
+        console.error('Supabase update category error, using localStorage:', error);
+        return this.updateLocalCategory(id, updates);
+      }
+    }
+    return this.updateLocalCategory(id, updates);
+  }
+
+  // Delete category with fallback
+  async deleteCategory(id) {
+    if (this.useSupabase && this.isSupabaseConfigured()) {
+      try {
+        await categoryApi.deleteCategory(id);
+        // Also remove from localStorage
+        this.deleteLocalCategory(id);
+        return true;
+      } catch (error) {
+        console.error('Supabase delete category error, using localStorage:', error);
+        return this.deleteLocalCategory(id);
+      }
+    }
+    return this.deleteLocalCategory(id);
+  }
+
+  // ========================
+  // LOCAL STORAGE METHODS FOR CATEGORIES
+  // ========================
+  
+  getLocalCategories() {
+    try {
+      return JSON.parse(localStorage.getItem('art_hub_categories') || '[]');
+    } catch (error) {
+      console.error('Error reading categories from localStorage:', error);
+      return [];
+    }
+  }
+
+  addLocalCategory(category) {
+    const categories = this.getLocalCategories();
+    const newCategory = {
+      ...category,
+      id: category.id || `local_${Date.now()}`,
+      created_at: category.created_at || new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      is_active: true
+    };
+    categories.push(newCategory);
+    localStorage.setItem('art_hub_categories', JSON.stringify(categories));
+    return newCategory;
+  }
+
+  updateLocalCategory(id, updates) {
+    const categories = this.getLocalCategories();
+    const index = categories.findIndex(cat => cat.id === id);
+    if (index !== -1) {
+      categories[index] = {
+        ...categories[index],
+        ...updates,
+        updated_at: new Date().toISOString()
+      };
+      localStorage.setItem('art_hub_categories', JSON.stringify(categories));
+      return categories[index];
+    }
+    throw new Error('Category not found in local storage');
+  }
+
+  deleteLocalCategory(id) {
+    const categories = this.getLocalCategories();
+    const filtered = categories.filter(cat => cat.id !== id);
+    localStorage.setItem('art_hub_categories', JSON.stringify(filtered));
+    return true;
+  }
+
   // PRODUCTS
   async getAllProducts() {
     if (this.useSupabase && this.isSupabaseConfigured()) {

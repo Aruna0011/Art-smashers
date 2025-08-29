@@ -56,10 +56,12 @@ import unifiedService from '../utils/unifiedService';
 import imageService from '../utils/imageService';
 import AdminProductManager from './AdminProductManager';
 import AdminCategoryManager from './AdminCategoryManager';
+import AdminTestPanel from './AdminTestPanel';
 import { getAllOrders, updateOrder } from '../utils/ordersApi';
 import { getAllUsers, updateUser, deleteUser } from '../utils/userApi';
 import userService from '../utils/userService';
 import ImagePicker from '../components/ImagePicker';
+import SupabaseTester from '../components/SupabaseTester';
 
 // Dynamically import all images from assets folder
 const imageModules = import.meta.glob('../assets/*', { eager: true });
@@ -765,9 +767,24 @@ const Admin = () => {
     return (
       <Card>
         <CardContent>
-          <Typography variant="h6" gutterBottom>
-            Order Management
-          </Typography>
+          <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+            <Typography variant="h4" component="h1">
+              Admin Dashboard
+            </Typography>
+            <Chip 
+              label={testSupabaseConnection().isConfigured ? 'Connected to Supabase' : 'Supabase Not Configured'}
+              color={testSupabaseConnection().isConfigured ? 'success' : 'error'}
+              variant="outlined"
+            />
+          </Box>
+          {!testSupabaseConnection().isConfigured && (
+            <Alert severity="error" sx={{ mb: 3 }}>
+              Supabase is not properly configured. Please check your .env file.
+              <Box component="pre" sx={{ mt: 1, fontSize: '0.8rem' }}>
+                VITE_SUPABASE_URL: {testSupabaseConnection().supabaseUrl}
+              </Box>
+            </Alert>
+          )}
           <TableContainer>
             <Table>
               <TableHead>
@@ -1138,6 +1155,7 @@ const Admin = () => {
 
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
+      <SupabaseTester />
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 4 }}>
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
           <Dashboard sx={{ mr: 2, fontSize: { xs: 24, md: 32 }, color: '#8B4513' }} />
@@ -1197,9 +1215,6 @@ const Admin = () => {
                             <TableCell>{order.placedAt ? new Date(order.placedAt).toLocaleString() : '-'}</TableCell>
                             <TableCell>{order.customer ? `${order.customer.firstName} ${order.customer.lastName}` : '-'}</TableCell>
                             <TableCell>₹{order.total ? order.total.toLocaleString() : '-'}</TableCell>
-                            <TableCell>
-                              <Chip label={order.status ? order.status.charAt(0).toUpperCase() + order.status.slice(1) : 'Pending'} color={order.status === 'delivered' ? 'success' : order.status === 'cancelled' ? 'error' : 'warning'} size="small" />
-                            </TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
@@ -1208,30 +1223,47 @@ const Admin = () => {
                 </CardContent>
               </Card>
             </Grid>
-            <Grid item xs={12} md={6}>
+          </Grid>
+          <Grid container spacing={3}>
+            <Grid item xs={12} md={4}>
               <Card>
                 <CardContent>
-                  <Typography variant="h6" gutterBottom>
-                    Order Status Summary
-                  </Typography>
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Typography>Pending Orders</Typography>
-                      <Chip label={orders.filter(order => order.status === 'pending' || !order.status).length} color="warning" />
-                    </Box>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Typography>Delivered Orders</Typography>
-                      <Chip label={orders.filter(order => order.status === 'delivered').length} color="success" />
-                    </Box>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Typography>Total Revenue</Typography>
-                      <Typography variant="h6" color="primary">
-                        ₹{orders.filter(order => order.status === 'delivered').reduce((sum, order) => sum + (order.total || 0), 0).toLocaleString()}
-                      </Typography>
-                    </Box>
+                  <Typography variant="h6" gutterBottom>Recent Orders</Typography>
+                  <Box sx={{ maxHeight: 300, overflow: 'auto' }}>
+                    {orders.slice(0, 5).map((order) => (
+                      <Box key={order.id} sx={{ p: 1, borderBottom: '1px solid #eee' }}>
+                        <Typography variant="body2">
+                          Order #{order.id?.slice(-8)} - ₹{order.total}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {order.customer?.name} - {order.status}
+                        </Typography>
+                      </Box>
+                    ))}
                   </Box>
                 </CardContent>
               </Card>
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <Card>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>Quick Actions</Typography>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                    <Button variant="outlined" onClick={() => setActiveTab(2)}>
+                      Manage Products
+                    </Button>
+                    <Button variant="outlined" onClick={() => setActiveTab(3)}>
+                      Manage Categories
+                    </Button>
+                    <Button variant="outlined" onClick={() => setActiveTab(4)}>
+                      Manage Images
+                    </Button>
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <AdminTestPanel />
             </Grid>
           </Grid>
         </>
