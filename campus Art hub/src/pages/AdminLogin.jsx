@@ -13,16 +13,12 @@ import {
 import {
   Visibility,
   VisibilityOff,
-  AdminPanelSettings,
-  Lock,
   Person,
+  Lock,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { supabase } from '../utils/supabaseClient';
-
-// Remove any references to username, localStorage, or hardcoded credentials
-// Only use email/password and Supabase Auth for login
+import { signIn } from '../utils/supabaseAuth';
 
 const AdminLogin = () => {
   const navigate = useNavigate();
@@ -48,29 +44,20 @@ const AdminLogin = () => {
       return;
     }
     try {
-      // Use Supabase authentication
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: formData.email,
-        password: formData.password,
-      });
-      if (error) {
+      const result = await signIn({ email: formData.email, password: formData.password });
+      if (result && result.user) {
+        // Check if user is admin
+        if (result.user.is_admin) {
+          toast.success('Login successful! Welcome to Admin Panel');
+          navigate('/admin');
+        } else {
+          setError('Access denied. Admin privileges required.');
+          toast.error('Access denied. Admin privileges required.');
+        }
+      } else {
         setError('Invalid email or password');
         toast.error('Invalid email or password');
-        return;
       }
-      // Check if user is admin by querying the users table
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('is_admin')
-        .eq('id', data.user.id)
-        .single();
-      if (userError || !userData || !userData.is_admin) {
-        toast.error('Access denied. Admin privileges required.');
-        await supabase.auth.signOut();
-        return;
-      }
-      toast.success('Login successful! Welcome to Admin Panel');
-      navigate('/admin');
     } catch (error) {
       console.error('Login error:', error);
       setError('Login failed. Please try again.');
