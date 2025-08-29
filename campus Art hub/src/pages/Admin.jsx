@@ -69,20 +69,20 @@ const Admin = () => {
         const currentUser = localStorage.getItem('art_hub_current_user');
         if (currentUser) {
           const user = JSON.parse(currentUser);
+          console.log('Current user:', user);
           if (!user.is_admin) {
-            navigate('/login');
+            console.log('User is not admin, redirecting...');
+            navigate('/admin-login');
             return;
           }
         } else {
-          const session = await getSession();
-          if (!session || !session.user || !session.user.is_admin) {
-            navigate('/login');
-            return;
-          }
+          console.log('No current user found, redirecting to admin login...');
+          navigate('/admin-login');
+          return;
         }
       } catch (error) {
         console.error('Auth check error:', error);
-        navigate('/login');
+        navigate('/admin-login');
       }
     };
     checkAuth();

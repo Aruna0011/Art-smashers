@@ -49,15 +49,23 @@ const AdminLogin = () => {
       
       const result = await signIn({ email: trimmedEmail, password: trimmedPassword });
       
+      console.log('Login result:', result);
+      
       if (result && result.user) {
+        console.log('User logged in:', result.user);
+        console.log('Is admin?', result.user.is_admin);
+        
         // Check if user is admin
-        if (result.user.is_admin) {
+        if (result.user.is_admin === true) {
           toast.success('Login successful! Welcome to Admin Panel');
           navigate('/admin');
         } else {
           setError('Access denied. Admin privileges required.');
           toast.error('Access denied. Admin privileges required.');
         }
+      } else if (result && result.error) {
+        setError(result.error);
+        toast.error(result.error);
       } else {
         setError('Invalid email or password');
         toast.error('Invalid email or password');
