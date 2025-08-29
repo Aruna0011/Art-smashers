@@ -1,61 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  Container,
-  Typography,
-  Grid,
-  Card,
-  CardContent,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  Tabs,
-  Tab,
-  Button,
-  Chip,
-  Avatar,
-  IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Alert,
-  Badge,
-} from '@mui/material';
-import toast from 'react-hot-toast';
-import {
-  People,
-  ShoppingCart,
-  Inventory,
-  AttachMoney,
-  TrendingUp,
-  Edit,
-  Delete,
-  Visibility,
-  Add,
-  Dashboard,
-  LocalShipping,
-  Payment,
-  Logout,
-  Category,
-  Image,
-} from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import { getAllProducts, addProduct, updateProduct, deleteProduct } from '../utils/productApi';
-import { getAllCategories, addCategory, updateCategory, deleteCategory } from '../utils/categoryApi';
-import { getAllUsers, updateUser, deleteUser } from '../utils/userApi';
+import {
+  Container, Typography, Box, Tabs, Tab, Card, CardContent, Grid,
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
+  Paper, Chip, Button, Dialog, DialogTitle, DialogContent, DialogActions,
+  TextField, FormControl, InputLabel, Select, MenuItem, IconButton,
+  Avatar, Divider
+} from '@mui/material';
+import {
+  Dashboard, ShoppingCart, Inventory, Category, People, Image,
+  TrendingUp, AttachMoney, ShoppingBag, Person, Logout,
+  Edit, Delete, Add, Visibility
+} from '@mui/icons-material';
+import toast from 'react-hot-toast';
+import { signOut, getSession } from '../utils/supabaseAuth';
 import { getAllOrders, updateOrder } from '../utils/ordersApi';
-import { uploadProductImage } from '../utils/imageUpload';
-import { supabase } from '../utils/supabaseClient';
+import { getAllProducts, addProduct as createProduct, updateProduct, deleteProduct } from '../utils/productApi';
+import { getAllCategories, addCategory as createCategory, updateCategory, deleteCategory } from '../utils/categoryApi';
+import { getAllUsers, updateUser, deleteUser } from '../utils/userApi';
+import userService from '../utils/userService';
+import ImagePicker from '../components/ImagePicker';
 
 // Dynamically import all images from assets folder
 const imageModules = import.meta.glob('../assets/*', { eager: true });
@@ -98,25 +62,44 @@ const Admin = () => {
   const [wallImages, setWallImages] = useState([]);
   const [offerImages, setOfferImages] = useState([]);
 
+  // Authentication check
   useEffect(() => {
-    const loadImages = async () => {
-      const { data, error } = await supabase.from('images').select('*').order('order', { ascending: true });
-      if (!error && data) {
-        setCarouselImages(data.filter(img => img.type === 'carousel'));
-        setWallImages(data.filter(img => img.type === 'wall'));
-        setOfferImages(data.filter(img => img.type === 'offer'));
+    const checkAuth = async () => {
+      try {
+        const currentUser = localStorage.getItem('art_hub_current_user');
+        if (currentUser) {
+          const user = JSON.parse(currentUser);
+          if (!user.is_admin) {
+            navigate('/login');
+            return;
+          }
+        } else {
+          const session = await getSession();
+          if (!session || !session.user || !session.user.is_admin) {
+            navigate('/login');
+            return;
+          }
+        }
+      } catch (error) {
+        console.error('Auth check error:', error);
+        navigate('/login');
+      }
+    };
+    checkAuth();
+  }, [navigate]);
+
+  useEffect(() => {
+    const loadImages = () => {
+      try {
+        const imageData = JSON.parse(localStorage.getItem('art_hub_image_management') || '[]');
+        setCarouselImages(imageData.filter(img => img.type === 'carousel'));
+        setWallImages(imageData.filter(img => img.type === 'wall'));
+        setOfferImages(imageData.filter(img => img.type === 'offer'));
+      } catch (error) {
+        console.error('Error loading images:', error);
       }
     };
     loadImages();
-
-    // Real-time subscription for images
-    const imageSub = supabase
-      .channel('images')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'images' }, loadImages)
-      .subscribe();
-    return () => {
-      supabase.removeChannel(imageSub);
-    };
   }, []);
 
   // Add search state for each image dropdown section
@@ -140,134 +123,135 @@ const Admin = () => {
   const [offerLabels, setOfferLabels] = useState([]);
 
   useEffect(() => {
-    const loadImageMeta = async () => {
-      const { data, error } = await supabase.from('images').select('*');
-      if (!error && data) {
-        setCarouselLinks(data.filter(img => img.type === 'carousel').map(img => img.link || ''));
-        setWallLinks(data.filter(img => img.type === 'wall').map(img => img.link || ''));
-        setOfferLinks(data.filter(img => img.type === 'offer').map(img => img.link || ''));
-        setCarouselText(data.find(img => img.type === 'carousel' && img.text) ? data.find(img => img.type === 'carousel' && img.text).text : '');
-        setWallText(data.find(img => img.type === 'wall' && img.text) ? data.find(img => img.type === 'wall' && img.text).text : '');
-        setOfferText(data.find(img => img.type === 'offer' && img.text) ? data.find(img => img.type === 'offer' && img.text).text : '');
-        setWallLabels(data.filter(img => img.type === 'wall').map(img => img.label || ''));
-        setOfferLabels(data.filter(img => img.type === 'offer').map(img => img.label || ''));
+    const loadImageMeta = () => {
+      try {
+        const imageData = JSON.parse(localStorage.getItem('art_hub_image_management') || '[]');
+        setCarouselLinks(imageData.filter(img => img.type === 'carousel').map(img => img.link || ''));
+        setWallLinks(imageData.filter(img => img.type === 'wall').map(img => img.link || ''));
+        setOfferLinks(imageData.filter(img => img.type === 'offer').map(img => img.link || ''));
+        setCarouselText(imageData.find(img => img.type === 'carousel' && img.section_text) ? imageData.find(img => img.type === 'carousel' && img.section_text).section_text : '');
+        setWallText(imageData.find(img => img.type === 'wall' && img.section_text) ? imageData.find(img => img.type === 'wall' && img.section_text).section_text : '');
+        setOfferText(imageData.find(img => img.type === 'offer' && img.section_text) ? imageData.find(img => img.type === 'offer' && img.section_text).section_text : '');
+        setWallLabels(imageData.filter(img => img.type === 'wall').map(img => img.label || ''));
+        setOfferLabels(imageData.filter(img => img.type === 'offer').map(img => img.label || ''));
+      } catch (error) {
+        console.error('Error loading image metadata:', error);
       }
     };
     loadImageMeta();
-    const imageMetaSub = supabase
-      .channel('images')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'images' }, loadImageMeta)
-      .subscribe();
-    return () => {
-      supabase.removeChannel(imageMetaSub);
-    };
   }, []);
 
-  // Handlers for dropdown selection
-  // Update handleSelectImage to update image in Supabase
-  const handleSelectImage = async (type, idx, value) => {
-    let images = type === 'carousel' ? carouselImages : type === 'wall' ? wallImages : offerImages;
-    const imageToUpdate = images[idx];
-    if (imageToUpdate && imageToUpdate.id) {
-      try {
-        await updateImage(imageToUpdate.id, { image: value });
+  // Handlers for dropdown selection - localStorage version
+  const handleSelectImage = (type, idx, value) => {
+    try {
+      const imageData = JSON.parse(localStorage.getItem('art_hub_image_management') || '[]');
+      const images = imageData.filter(img => img.type === type);
+      if (images[idx]) {
+        images[idx].image = value;
+        // Update the main array
+        const updatedData = imageData.map(img => 
+          img.id === images[idx].id ? { ...img, image: value } : img
+        );
+        localStorage.setItem('art_hub_image_management', JSON.stringify(updatedData));
+        
+        // Update state
+        if (type === 'carousel') setCarouselImages(updatedData.filter(img => img.type === 'carousel'));
+        if (type === 'wall') setWallImages(updatedData.filter(img => img.type === 'wall'));
+        if (type === 'offer') setOfferImages(updatedData.filter(img => img.type === 'offer'));
+        
         toast.success('Image updated!');
-      } catch (error) {
-        toast.error('Failed to update image: ' + (error.message || error));
       }
+    } catch (error) {
+      toast.error('Failed to update image: ' + error.message);
     }
   };
-  // Add these helper functions for image CRUD
-  const addImage = async (imageData) => {
-    const { error } = await supabase.from('images').insert([imageData]);
-    if (error) throw error;
-  };
-  const updateImage = async (id, updates) => {
-    const { error } = await supabase.from('images').update(updates).eq('id', id);
-    if (error) throw error;
-  };
-  const deleteImage = async (id) => {
-    const { error } = await supabase.from('images').delete().eq('id', id);
-    if (error) throw error;
-  };
-  // Update handleAddImageSlot to insert a new image in Supabase
-  const handleAddImageSlot = async (type) => {
+
+  const handleAddImageSlot = (type) => {
     try {
-      const defaultImage = assetImages[0];
-      await addImage({ type, image: defaultImage, label: '', description: '', order: 0 });
+      const imageData = JSON.parse(localStorage.getItem('art_hub_image_management') || '[]');
+      const newImage = {
+        id: Date.now().toString(),
+        type,
+        image: assetImages[0] || 'Art.jpg',
+        label: `New ${type} image`,
+        link: '/products',
+        order_index: imageData.filter(img => img.type === type).length,
+        section_text: `${type} section`,
+        created_at: new Date().toISOString()
+      };
+      
+      imageData.push(newImage);
+      localStorage.setItem('art_hub_image_management', JSON.stringify(imageData));
+      
+      // Update state
+      if (type === 'carousel') setCarouselImages(imageData.filter(img => img.type === 'carousel'));
+      if (type === 'wall') setWallImages(imageData.filter(img => img.type === 'wall'));
+      if (type === 'offer') setOfferImages(imageData.filter(img => img.type === 'offer'));
+      
       toast.success('Image added!');
     } catch (error) {
-      toast.error('Failed to add image: ' + (error.message || error));
+      toast.error('Failed to add image: ' + error.message);
     }
   };
-  // Update handleRemoveImageSlot to delete image from Supabase
-  const handleRemoveImageSlot = async (type, idx) => {
+
+  const handleRemoveImageSlot = (type, idx) => {
     try {
-      const images = type === 'carousel' ? carouselImages : type === 'wall' ? wallImages : offerImages;
-      const imageToDelete = images[idx];
-      if (imageToDelete && imageToDelete.id) {
-        await deleteImage(imageToDelete.id);
+      const imageData = JSON.parse(localStorage.getItem('art_hub_image_management') || '[]');
+      const images = imageData.filter(img => img.type === type);
+      if (images[idx]) {
+        const updatedData = imageData.filter(img => img.id !== images[idx].id);
+        localStorage.setItem('art_hub_image_management', JSON.stringify(updatedData));
+        
+        // Update state
+        if (type === 'carousel') setCarouselImages(updatedData.filter(img => img.type === 'carousel'));
+        if (type === 'wall') setWallImages(updatedData.filter(img => img.type === 'wall'));
+        if (type === 'offer') setOfferImages(updatedData.filter(img => img.type === 'offer'));
+        
         toast.success('Image deleted!');
       }
     } catch (error) {
-      toast.error('Failed to delete image: ' + (error.message || error));
-    }
-  };
-  // Update handleLabelChange, handleLinkChange, handleSectionTextChange to update image in Supabase
-  const handleLabelChange = async (type, idx, value) => {
-    try {
-      const images = type === 'wall' ? wallImages : offerImages;
-      const imageToUpdate = images[idx];
-      if (imageToUpdate && imageToUpdate.id) {
-        await updateImage(imageToUpdate.id, { label: value });
-        toast.success('Label updated!');
-      }
-    } catch (error) {
-      toast.error('Failed to update label: ' + (error.message || error));
-    }
-  };
-  const handleLinkChange = async (type, idx, value) => {
-    try {
-      const images = type === 'carousel' ? carouselImages : type === 'wall' ? wallImages : offerImages;
-      const imageToUpdate = images[idx];
-      if (imageToUpdate && imageToUpdate.id) {
-        await updateImage(imageToUpdate.id, { link: value });
-        toast.success('Link updated!');
-      }
-    } catch (error) {
-      toast.error('Failed to update link: ' + (error.message || error));
-    }
-  };
-  const handleSectionTextChange = async (type, value) => {
-    try {
-      // Update all images of this type with the new section text
-      const images = type === 'carousel' ? carouselImages : type === 'wall' ? wallImages : offerImages;
-      await Promise.all(images.map(img => img.id && updateImage(img.id, { text: value })));
-      if (type === 'carousel') setCarouselText(value);
-      if (type === 'wall') setWallText(value);
-      if (type === 'offer') setOfferText(value);
-      toast.success('Section text updated!');
-    } catch (error) {
-      toast.error('Failed to update section text: ' + (error.message || error));
+      toast.error('Failed to delete image: ' + error.message);
     }
   };
 
-  // Remove the hardcoded orders array.
-  // Add state for orders and load from orderStore:
+  // State for all data
   const [orders, setOrders] = useState([]);
+  const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [loadingAdmin, setLoadingAdmin] = useState(true);
+  const [editingOrder, setEditingOrder] = useState(null);
+  const [openEditOrderDialog, setOpenEditOrderDialog] = useState(false);
+  const [editingOrderStatus, setEditingOrderStatus] = useState('');
+
   useEffect(() => {
-    const loadOrders = async () => {
-      const allOrders = await getAllOrders();
-      setOrders(allOrders);
-      console.log('Loaded orders:', allOrders);
+    const loadAllData = async () => {
+      try {
+        const [allOrders, allProducts, allCategories, allUsers] = await Promise.all([
+          getAllOrders(),
+          getAllProducts(),
+          getAllCategories(),
+          getAllUsers()
+        ]);
+        
+        setOrders(allOrders);
+        setProducts(allProducts);
+        setCategories(allCategories);
+        setUsers(allUsers);
+        
+        console.log('Loaded data:', { orders: allOrders.length, products: allProducts.length, categories: allCategories.length, users: allUsers.length });
+      } catch (error) {
+        console.error('Error loading admin data:', error);
+      }
     };
     
-    loadOrders();
+    loadAllData();
     
     // Listen for updates
     const handleStorageChange = () => {
       console.log('Storage changed, reloading data');
-      loadOrders();
+      loadAllData();
     };
     
     const handleCategoriesUpdate = () => {
@@ -415,12 +399,10 @@ const Admin = () => {
 
   const handleLogout = async () => {
     try {
-      // Sign out from Supabase
-      await supabase.auth.signOut();
-      // Clear local storage
-      localStorage.removeItem('adminAuthenticated');
+      await signOut();
+      localStorage.removeItem('art_hub_current_user');
       toast.success('Logged out successfully');
-      navigate('/admin-login');
+      navigate('/');
     } catch (error) {
       console.error('Logout error:', error);
       toast.error('Error during logout');
@@ -714,7 +696,6 @@ const Admin = () => {
   );
 
   const renderOrders = () => {
-    const { data: users } = supabase.from('users').select('*');
     return (
       <Card>
         <CardContent>
@@ -738,7 +719,6 @@ const Admin = () => {
               </TableHead>
               <TableBody>
                 {orders.map((order, idx) => {
-                  const user = users?.find(u => u.email === (order.customer?.email || order.clientEmail));
                   return (
                     <TableRow key={order.id || idx}>
                       <TableCell>{order.placedAt ? new Date(order.placedAt).toLocaleString() : '-'}</TableCell>
@@ -871,20 +851,9 @@ const Admin = () => {
       <CardContent>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
           <Typography variant="h6">Category Management</Typography>
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            <Button 
-              variant="outlined" 
-              onClick={async () => {
-                setCategories(await getAllCategories());
-                toast.success('Categories refreshed!');
-              }}
-            >
-              Refresh
-            </Button>
-            <Button variant="contained" startIcon={<Add />} onClick={handleAddCategory}>
-              Add New Category
-            </Button>
-          </Box>
+          <Button variant="contained" startIcon={<Add />} onClick={() => setOpenCategoryDialog(true)}>
+            Add New Category
+          </Button>
         </Box>
         <TableContainer>
           <Table>
@@ -1041,18 +1010,10 @@ const Admin = () => {
     </Box>
   );
 
-  // Clear all users from localStorage when admin panel loads
-  useEffect(() => {
-    localStorage.removeItem('users');
-  }, []);
-
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [editingUserData, setEditingUserData] = useState({});
   const [refreshClients, setRefreshClients] = useState(0);
-
-  const filteredUsers = supabase.from('users').select('*').then(res => res.data);
-  const messages = supabase.from('contact_messages').select('*').then(res => res.data);
 
   const handleEditUser = (user) => {
     setEditingUser(user);
@@ -1093,49 +1054,6 @@ const Admin = () => {
 
   // force re-render on refreshClients
   useEffect(() => {}, [refreshClients]);
-
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [loadingAdmin, setLoadingAdmin] = useState(true);
-
-  useEffect(() => {
-    async function checkAdmin() {
-      try {
-        // Check if user is authenticated with Supabase
-        const { data: { user }, error } = await supabase.auth.getUser();
-        
-        if (error || !user) {
-          setIsAdmin(false);
-          setLoadingAdmin(false);
-          return;
-        }
-
-        // Check if user is admin by querying the users table
-        const { data: userData, error: userError } = await supabase
-          .from('users')
-          .select('*')
-          .eq('email', user.email)
-          .single();
-
-        if (userError || !userData || !userData.is_admin) {
-          setIsAdmin(false);
-        } else {
-          setIsAdmin(true);
-        }
-      } catch (error) {
-        console.error('Admin check error:', error);
-        setIsAdmin(false);
-      } finally {
-        setLoadingAdmin(false);
-      }
-    }
-    checkAdmin();
-  }, []);
-
-  if (loadingAdmin) return null;
-  if (!isAdmin) {
-    navigate('/admin-login');
-    return null;
-  }
 
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
@@ -1262,7 +1180,7 @@ const Admin = () => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {filteredUsers?.map((user) => (
+                  {users.map((user) => (
                     <TableRow key={user.id}>
                       <TableCell>{user.name}</TableCell>
                       <TableCell>{user.email}</TableCell>

@@ -22,18 +22,25 @@ const UserProfile = () => {
 
   useEffect(() => {
     const fetchUser = async () => {
-      const session = await getSession();
-      if (!session || !session.user) {
+      try {
+        // Primary check: localStorage current user
+        const currentUser = localStorage.getItem('art_hub_current_user');
+        if (currentUser) {
+          const user = JSON.parse(currentUser);
+          setUserData(user);
+        } else {
+          // Fallback: try getSession
+          const session = await getSession();
+          if (!session || !session.user) {
+            navigate('/login');
+            return;
+          }
+          setUserData(session.user);
+        }
+      } catch (error) {
+        console.error('Error fetching user data:', error);
         navigate('/login');
-        return;
       }
-      // Get user data from local storage
-      const currentUser = JSON.parse(localStorage.getItem('art_hub_current_user'));
-      if (!currentUser) {
-        navigate('/login');
-        return;
-      }
-      setUserData(currentUser);
     };
     fetchUser();
   }, [navigate]);

@@ -44,7 +44,11 @@ const AdminLogin = () => {
       return;
     }
     try {
-      const result = await signIn({ email: formData.email, password: formData.password });
+      const trimmedEmail = formData.email.trim();
+      const trimmedPassword = formData.password.trim();
+      
+      const result = await signIn({ email: trimmedEmail, password: trimmedPassword });
+      
       if (result && result.user) {
         // Check if user is admin
         if (result.user.is_admin) {
@@ -60,8 +64,8 @@ const AdminLogin = () => {
       }
     } catch (error) {
       console.error('Login error:', error);
-      setError('Login failed. Please try again.');
-      toast.error('Login failed. Please try again.');
+      setError(error.message || 'Login failed. Please try again.');
+      toast.error(error.message || 'Login failed. Please try again.');
     }
   };
 
