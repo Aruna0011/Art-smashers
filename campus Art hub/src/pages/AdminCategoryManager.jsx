@@ -4,9 +4,14 @@ import {
   TextField, Grid, Table, TableBody, TableCell, TableContainer, 
   TableHead, TableRow, Paper, IconButton, Chip
 } from '@mui/material';
-import { Add, Edit, Delete } from '@mui/icons-material';
+import { Add, Edit, Delete, Image as ImageIcon } from '@mui/icons-material';
 import toast from 'react-hot-toast';
 import unifiedService from '../utils/unifiedService';
+import ImagePicker from '../components/ImagePicker';
+
+// Dynamically import all images from assets folder
+const imageModules = import.meta.glob('../../assets/*', { eager: true });
+const assetImages = Object.keys(imageModules).map((path) => path.split('/').pop());
 
 const AdminCategoryManager = ({ categories, onCategoriesChange }) => {
   const [openAddDialog, setOpenAddDialog] = useState(false);
@@ -154,12 +159,28 @@ const AdminCategoryManager = ({ categories, onCategoriesChange }) => {
               />
             </Grid>
             <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Image URL"
-                value={newCategory.image}
-                onChange={(e) => setNewCategory({ ...newCategory, image: e.target.value })}
+              <Typography variant="subtitle2" gutterBottom>Category Image</Typography>
+              <ImagePicker
+                images={assetImages}
+                selected={newCategory.image ? [newCategory.image] : []}
+                onSelect={(images) => {
+                  setNewCategory({ ...newCategory, image: images[0] || '' });
+                }}
+                multiple={false}
+                uploadText="Select or upload category image"
               />
+              {newCategory.image && (
+                <Box sx={{ mt: 2, textAlign: 'center' }}>
+                  <Typography variant="caption" display="block" gutterBottom>
+                    Selected Image:
+                  </Typography>
+                  <img 
+                    src={newCategory.image} 
+                    alt="Category preview" 
+                    style={{ maxWidth: '100%', maxHeight: '150px', marginTop: '8px' }}
+                  />
+                </Box>
+              )}
             </Grid>
           </Grid>
         </DialogContent>
@@ -196,12 +217,28 @@ const AdminCategoryManager = ({ categories, onCategoriesChange }) => {
                 />
               </Grid>
               <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="Image URL"
-                  value={editingCategory.image || ''}
-                  onChange={(e) => setEditingCategory({ ...editingCategory, image: e.target.value })}
+                <Typography variant="subtitle2" gutterBottom>Category Image</Typography>
+                <ImagePicker
+                  images={assetImages}
+                  selected={editingCategory.image ? [editingCategory.image] : []}
+                  onSelect={(images) => {
+                    setEditingCategory({ ...editingCategory, image: images[0] || '' });
+                  }}
+                  multiple={false}
+                  uploadText="Select or upload category image"
                 />
+                {editingCategory.image && (
+                  <Box sx={{ mt: 2, textAlign: 'center' }}>
+                    <Typography variant="caption" display="block" gutterBottom>
+                      Selected Image:
+                    </Typography>
+                    <img 
+                      src={editingCategory.image} 
+                      alt="Category preview" 
+                      style={{ maxWidth: '100%', maxHeight: '150px', marginTop: '8px' }}
+                    />
+                  </Box>
+                )}
               </Grid>
             </Grid>
           )}
