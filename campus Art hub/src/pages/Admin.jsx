@@ -1,22 +1,61 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
-  Container, Typography, Box, Tabs, Tab, Card, CardContent, Grid,
-  Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-  Paper, Chip, Button, Dialog, DialogTitle, DialogContent, DialogActions,
-  TextField, FormControl, InputLabel, Select, MenuItem, IconButton,
-  Avatar, Divider
+  Box,
+  Typography,
+  Grid,
+  Card,
+  CardContent,
+  Button,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  IconButton,
+  Chip,
+  Avatar,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemAvatar,
+  Divider,
+  useTheme,
+  useMediaQuery,
+  Tabs,
+  Tab,
+  AppBar,
 } from '@mui/material';
 import {
-  Dashboard, ShoppingCart, Inventory, Category, People, Image,
-  TrendingUp, AttachMoney, ShoppingBag, Person, Logout,
-  Edit, Delete, Add, Visibility
+  Dashboard,
+  ShoppingCart,
+  People,
+  Category,
+  Image,
+  Add,
+  Edit,
+  Delete,
+  Visibility,
+  Refresh,
+  CloudUpload,
 } from '@mui/icons-material';
+import { Navigate, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { signOut, getSession } from '../utils/supabaseAuth';
+import unifiedService from '../utils/unifiedService';
+import imageService from '../utils/imageService';
+import AdminProductManager from './AdminProductManager';
+import AdminCategoryManager from './AdminCategoryManager';
 import { getAllOrders, updateOrder } from '../utils/ordersApi';
-import { getAllProducts, addProduct as createProduct, updateProduct, deleteProduct } from '../utils/productApi';
-import { getAllCategories, addCategory as createCategory, updateCategory, deleteCategory } from '../utils/categoryApi';
 import { getAllUsers, updateUser, deleteUser } from '../utils/userApi';
 import userService from '../utils/userService';
 import ImagePicker from '../components/ImagePicker';
@@ -86,14 +125,23 @@ const Admin = () => {
   }, [navigate]);
 
   useEffect(() => {
-    const loadImages = () => {
+    const loadImages = async () => {
       try {
+        // Load images from Supabase (with localStorage fallback)
+        const carouselData = await imageService.getImagesByType('carousel');
+        const wallData = await imageService.getImagesByType('wall');
+        const offerData = await imageService.getImagesByType('offer');
+        
+        setCarouselImages(carouselData);
+        setWallImages(wallData);
+        setOfferImages(offerData);
+      } catch (error) {
+        console.error('Error loading images:', error);
+        // Fallback to localStorage if Supabase fails
         const imageData = JSON.parse(localStorage.getItem('art_hub_image_management') || '[]');
         setCarouselImages(imageData.filter(img => img.type === 'carousel'));
         setWallImages(imageData.filter(img => img.type === 'wall'));
         setOfferImages(imageData.filter(img => img.type === 'offer'));
-      } catch (error) {
-        console.error('Error loading images:', error);
       }
     };
     loadImages();
@@ -225,19 +273,19 @@ const Admin = () => {
   useEffect(() => {
     const loadAllData = async () => {
       try {
-        const [allOrders, allProducts, allCategories, allUsers] = await Promise.all([
+        const [ordersData, productsData, categoriesData, usersData] = await Promise.all([
           getAllOrders(),
-          getAllProducts(),
-          getAllCategories(),
+          unifiedService.getAllProducts(),
+          unifiedService.getAllCategories(),
           getAllUsers()
         ]);
         
-        setOrders(allOrders);
-        setProducts(allProducts);
-        setCategories(allCategories);
-        setUsers(allUsers);
+        setOrders(ordersData);
+        setProducts(productsData);
+        setCategories(categoriesData);
+        setUsers(usersData);
         
-        console.log('Loaded data:', { orders: allOrders.length, products: allProducts.length, categories: allCategories.length, users: allUsers.length });
+        console.log('Loaded data:', { orders: ordersData.length, products: productsData.length, categories: categoriesData.length, users: usersData.length });
       } catch (error) {
         console.error('Error loading admin data:', error);
       }
@@ -344,8 +392,8 @@ const Admin = () => {
     }
 
     try {
-      // Update product in store
-      const success = await updateProduct(editingProduct.id, {
+      // Update product in Supabase
+      const success = await unifiedService.updateProduct(editingProduct.id, {
         ...editingProductData,
         price: Number(editingProductData.price),
         stock: Number(editingProductData.stock),
@@ -762,6 +810,21 @@ const Admin = () => {
   };
 
   const renderProducts = () => (
+    <AdminProductManager 
+      products={products} 
+      categories={categories} 
+      onProductsChange={loadAllData}
+    />
+  );
+
+  const renderCategories = () => (
+    <AdminCategoryManager 
+      categories={categories} 
+      onCategoriesChange={loadAllData}
+    />
+  );
+
+  const renderOldProducts = () => (
     <Card>
       <CardContent>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
@@ -770,9 +833,9 @@ const Admin = () => {
             <Button 
               variant="outlined" 
               onClick={async () => {
-                const refreshedProducts = await getAllProducts();
+                const refreshedProducts = await unifiedService.getAllProducts();
                 setProducts(refreshedProducts);
-                setCategories(await getAllCategories());
+                setCategories(await unifiedService.getAllCategories());
                 toast.success(`Data refreshed! Found ${refreshedProducts.length} products`);
               }}
             >

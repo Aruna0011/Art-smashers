@@ -1,21 +1,20 @@
 import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   Box,
-  Container,
   Typography,
   Button,
-  Grid,
   Card,
   CardContent,
   CardMedia,
-  CardActions,
+  Grid,
+  Container,
   Chip,
-  Fade,
-  Grow,
-  Slide,
   IconButton,
-  useTheme,
-  useMediaQuery,
+  Dialog,
+  DialogContent,
+  DialogActions,
+  Fade,
   TextField,
 } from '@mui/material';
 import {
@@ -27,11 +26,16 @@ import {
   CameraAlt,
   NavigateBefore,
   NavigateNext,
+  ArrowBackIos,
+  ArrowForwardIos,
+  Close,
+  Favorite,
 } from '@mui/icons-material';
-import { Link } from 'react-router-dom';
-import { getAllProducts } from '../utils/productApi';
-import { getAllCategories } from '../utils/categoryApi';
-import { useRef } from 'react';
+import unifiedService from '../utils/unifiedService';
+import cartStore from '../utils/cartStore';
+import wishlistStore from '../utils/wishlistStore';
+import imageService from '../utils/imageService';
+import toast from 'react-hot-toast';
 
 const Home = () => {
   const theme = useTheme();
@@ -55,13 +59,26 @@ const Home = () => {
 
   useEffect(() => {
     const loadImages = async () => {
-      const images = JSON.parse(localStorage.getItem('art_hub_image_management') || '[]');
-      const carouselImages = images.filter(img => img.type === 'carousel');
-      const wallImgs = images.filter(img => img.type === 'wall');
-      const offerImgs = images.filter(img => img.type === 'offer');
-      setSlides(carouselImages);
-      setWallImages(wallImgs);
-      setOfferImages(offerImgs);
+      try {
+        // Load images from Supabase (with localStorage fallback)
+        const carouselImages = await imageService.getImagesByType('carousel');
+        const wallImgs = await imageService.getImagesByType('wall');
+        const offerImgs = await imageService.getImagesByType('offer');
+        
+        setSlides(carouselImages);
+        setWallImages(wallImgs);
+        setOfferImages(offerImgs);
+      } catch (error) {
+        console.error('Error loading images:', error);
+        // Fallback to localStorage
+        const images = JSON.parse(localStorage.getItem('art_hub_image_management') || '[]');
+        const carouselImages = images.filter(img => img.type === 'carousel');
+        const wallImgs = images.filter(img => img.type === 'wall');
+        const offerImgs = images.filter(img => img.type === 'offer');
+        setSlides(carouselImages);
+        setWallImages(wallImgs);
+        setOfferImages(offerImgs);
+      }
     };
     loadImages();
   }, []);
@@ -102,11 +119,12 @@ const Home = () => {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const allCategories = await getAllCategories();
-        const allProducts = await getAllProducts();
-        setCategories(allCategories);
-        const featured = allProducts.slice(0, 4);
-        setFeaturedProducts(featured);
+        const [categoriesData, productsData] = await Promise.all([
+          unifiedService.getAllCategories(),
+          unifiedService.getAllProducts()
+        ]);
+        setCategories(categoriesData);
+        setFeaturedProducts(productsData.slice(0, 8)); // Show first 8 products as featured
       } catch (error) {
         console.error('Error loading data:', error);
       }
