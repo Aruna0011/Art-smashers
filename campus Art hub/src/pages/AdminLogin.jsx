@@ -55,8 +55,11 @@ const AdminLogin = () => {
         console.log('User logged in:', result.user);
         console.log('Is admin?', result.user.is_admin);
         
+        // Force navigate to admin regardless of admin status
         toast.success('Login successful! Welcome to Admin Panel');
-        navigate('/admin');
+        setTimeout(() => {
+          navigate('/admin');
+        }, 100);
       } else if (result && result.error) {
         setError(result.error);
         toast.error(result.error);
