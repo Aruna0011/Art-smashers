@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { testSupabaseConnection, debugAdminPanel } from '../utils/testSupabase';
 import {
   Box,
   Typography,
@@ -273,6 +274,15 @@ const Admin = () => {
   useEffect(() => {
     const loadAllData = async () => {
       try {
+        // Debug Supabase connection first
+        console.log('🔧 Admin Panel Debug Info:');
+        const debugInfo = debugAdminPanel();
+        console.log(debugInfo);
+        
+        // Test Supabase connection
+        console.log('🧪 Testing Supabase Connection...');
+        await testSupabaseConnection();
+        
         const [ordersData, productsData, categoriesData, usersData] = await Promise.all([
           getAllOrders(),
           unifiedService.getAllProducts(),
@@ -288,6 +298,7 @@ const Admin = () => {
         console.log('Loaded data:', { orders: ordersData.length, products: productsData.length, categories: categoriesData.length, users: usersData.length });
       } catch (error) {
         console.error('Error loading admin data:', error);
+        console.error('Full error:', error);
       }
     };
     
@@ -827,7 +838,7 @@ const Admin = () => {
     />
   );
 
-  const renderCategories = () => (
+  const renderCategoriesTab = () => (
     <AdminCategoryManager 
       categories={categories} 
       onCategoriesChange={loadAllData}
@@ -1227,7 +1238,7 @@ const Admin = () => {
       )}
       {activeTab === 1 && renderOrders()}
       {activeTab === 2 && renderProducts()}
-      {activeTab === 3 && renderCategories()}
+      {activeTab === 3 && renderCategoriesTab()}
       {activeTab === 4 && renderImageManagement()}
       {activeTab === 5 && (
         <Card>
