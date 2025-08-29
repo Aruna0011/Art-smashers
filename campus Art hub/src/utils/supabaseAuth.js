@@ -1,14 +1,33 @@
-import { supabase } from './supabaseClient';
+// Local storage-based authentication system (no Supabase)
 
 export async function signUp({ email, password, ...userData }) {
   try {
-    const { data, error } = await supabase.auth.signUp({
+    const users = JSON.parse(localStorage.getItem('art_hub_users') || '[]');
+    
+    // Check if user already exists
+    if (users.find(user => user.email === email)) {
+      throw new Error('User already exists with this email');
+    }
+    
+    const newUser = {
+      id: 'user_' + Date.now(),
       email,
-      password,
-      options: { data: userData }
-    });
-    if (error) throw error;
-    return data;
+      password, // In production, this should be hashed
+      ...userData,
+      is_admin: false,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+    
+    users.push(newUser);
+    localStorage.setItem('art_hub_users', JSON.stringify(users));
+    
+    // Auto-login after signup
+    const sessionUser = { ...newUser };
+    delete sessionUser.password;
+    localStorage.setItem('art_hub_current_user', JSON.stringify(sessionUser));
+    
+    return { user: sessionUser };
   } catch (error) {
     console.error('Auth signUp error:', error);
     throw error;
@@ -17,9 +36,19 @@ export async function signUp({ email, password, ...userData }) {
 
 export async function signIn({ email, password }) {
   try {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) throw error;
-    return data;
+    const users = JSON.parse(localStorage.getItem('art_hub_users') || '[]');
+    const user = users.find(u => u.email === email && u.password === password);
+    
+    if (!user) {
+      throw new Error('Invalid email or password');
+    }
+    
+    // Create session without password
+    const sessionUser = { ...user };
+    delete sessionUser.password;
+    localStorage.setItem('art_hub_current_user', JSON.stringify(sessionUser));
+    
+    return { user: sessionUser };
   } catch (error) {
     console.error('Auth signIn error:', error);
     throw error;
@@ -28,8 +57,7 @@ export async function signIn({ email, password }) {
 
 export async function signOut() {
   try {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
+    localStorage.removeItem('art_hub_current_user');
   } catch (error) {
     console.error('Auth signOut error:', error);
     throw error;
@@ -38,29 +66,33 @@ export async function signOut() {
 
 export async function getSession() {
   try {
-    const { data, error } = await supabase.auth.getSession();
-    if (error) throw error;
-    return data.session;
+    const currentUser = JSON.parse(localStorage.getItem('art_hub_current_user'));
+    return currentUser ? { user: currentUser } : null;
   } catch (error) {
     console.error('Auth getSession error:', error);
-    throw error;
+    return null;
   }
 }
 
 export function onAuthStateChange(callback) {
-  try {
-    return supabase.auth.onAuthStateChange(callback);
-  } catch (error) {
-    console.error('Auth onAuthStateChange error:', error);
-    throw error;
-  }
+  // Simple implementation for localStorage auth
+  const checkAuth = () => {
+    const session = JSON.parse(localStorage.getItem('art_hub_current_user'));
+    callback('SIGNED_IN', session ? { user: session } : null);
+  };
+  
+  // Check immediately
+  checkAuth();
+  
+  // Return unsubscribe function
+  return { data: { subscription: { unsubscribe: () => {} } } };
 }
 
 export async function resetPassword(email) {
   try {
-    const { data, error } = await supabase.auth.resetPasswordForEmail(email);
-    if (error) throw error;
-    return data;
+    // For demo purposes, just return success
+    console.log('Password reset requested for:', email);
+    return { data: { success: true } };
   } catch (error) {
     console.error('Auth resetPassword error:', error);
     throw error;

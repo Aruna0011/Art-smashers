@@ -48,11 +48,11 @@ const Register = () => {
         address: 'Address not provided',
         isCampusStudent: isCampusStudent
       };
-      await signUp(userData);
+      const result = await signUp(userData);
       setError('');
-      setTimeout(() => {
-        navigate('/profile');
-      }, 1500);
+      if (result && result.user) {
+        navigate('/');
+      }
     } catch (error) {
       setError(error.message);
     }

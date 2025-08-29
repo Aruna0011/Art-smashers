@@ -38,7 +38,7 @@ const Login = () => {
         if (result.user && result.user.is_admin) {
           navigate('/admin');
         } else {
-          navigate('/profile');
+          navigate('/');
         }
       } else {
         setError('Invalid email or password. Please try again.');

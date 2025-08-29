@@ -10,13 +10,19 @@ const UserProtectedRoute = ({ children }) => {
   useEffect(() => {
     async function checkSession() {
       try {
-        const sess = await getSession();
-        setSession(sess);
+        // Primary check: localStorage current user
+        const localUser = localStorage.getItem('art_hub_current_user');
+        if (localUser) {
+          const user = JSON.parse(localUser);
+          setSession({ user });
+        } else {
+          // Fallback: try getSession
+          const sess = await getSession();
+          setSession(sess);
+        }
       } catch (error) {
         console.error('Session check error:', error);
-        // Fallback to local storage check
-        const localUser = JSON.parse(localStorage.getItem('art_hub_current_user'));
-        setSession(localUser ? { user: localUser } : null);
+        setSession(null);
       } finally {
         setLoading(false);
       }
