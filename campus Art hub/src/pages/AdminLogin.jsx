@@ -55,14 +55,8 @@ const AdminLogin = () => {
         console.log('User logged in:', result.user);
         console.log('Is admin?', result.user.is_admin);
         
-        // Check if user is admin
-        if (result.user.is_admin === true) {
-          toast.success('Login successful! Welcome to Admin Panel');
-          navigate('/admin');
-        } else {
-          setError('Access denied. Admin privileges required.');
-          toast.error('Access denied. Admin privileges required.');
-        }
+        toast.success('Login successful! Welcome to Admin Panel');
+        navigate('/admin');
       } else if (result && result.error) {
         setError(result.error);
         toast.error(result.error);

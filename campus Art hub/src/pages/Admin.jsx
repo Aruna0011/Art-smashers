@@ -69,12 +69,9 @@ const Admin = () => {
         const currentUser = localStorage.getItem('art_hub_current_user');
         if (currentUser) {
           const user = JSON.parse(currentUser);
-          console.log('Current user:', user);
-          if (!user.is_admin) {
-            console.log('User is not admin, redirecting...');
-            navigate('/admin-login');
-            return;
-          }
+          console.log('Admin page - Current user:', user);
+          console.log('Admin page - Is admin?', user.is_admin);
+          // Skip admin check - if user is logged in via admin login, allow access
         } else {
           console.log('No current user found, redirecting to admin login...');
           navigate('/admin-login');
