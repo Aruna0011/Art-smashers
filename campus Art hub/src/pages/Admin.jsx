@@ -471,20 +471,28 @@ const Admin = () => {
 
   const handleDeleteCategory = async (categoryId) => {
     // Check if category has products
-    const allCategories = await getAllCategories();
+    const allCategories = await unifiedService.getAllCategories();
     const categoryToDelete = allCategories.find(cat => cat.id === categoryId);
-    const productsInCategory = products.filter(product => product.category === categoryToDelete?.name);
     
-    if (productsInCategory.length > 0) {
-      toast.error(`Cannot delete category. It has ${productsInCategory.length} products. Please reassign or delete products first.`);
+    if (!categoryToDelete) {
+      toast.error('Category not found');
       return;
     }
 
-    if (window.confirm('Are you sure you want to delete this category?')) {
+    const productsInCategory = products.filter(product => product.category === categoryToDelete.name);
+    
+    if (productsInCategory.length > 0) {
+      toast.error(`Cannot delete category "${categoryToDelete.name}" because it has ${productsInCategory.length} products. Please move or delete these products first.`);
+      return;
+    }
+
+    if (window.confirm(`Are you sure you want to delete the category "${categoryToDelete.name}"?`)) {
       try {
-        const success = await deleteCategory(categoryId);
+        const success = await unifiedService.deleteCategory(categoryId);
+        
         if (success) {
           toast.success('Category deleted successfully!');
+          loadAllData(); // Refresh all data
         } else {
           toast.error('Failed to delete category');
         }
@@ -502,7 +510,7 @@ const Admin = () => {
     }
 
     // Check if name already exists (excluding current category)
-    const allCategories = await getAllCategories();
+    const allCategories = await unifiedService.getAllCategories();
     const nameExists = allCategories.some(cat => 
       cat.name.toLowerCase() === editingCategoryData.name.toLowerCase() && cat.id !== editingCategory.id
     );
@@ -513,18 +521,19 @@ const Admin = () => {
     }
 
     try {
-      // Update category in store
-      const updatedCategory = await updateCategory(editingCategory.id, editingCategoryData);
+      // Update category using unified service (syncs to Supabase)
+      const updatedCategory = await unifiedService.updateCategory(editingCategory.id, editingCategoryData);
       
       if (updatedCategory) {
-        // Update products that use this category in Supabase
+        // Update products that use this category
         const updatedProducts = products.filter(product => product.category === editingCategory.name);
         await Promise.all(updatedProducts.map(product =>
-          supabase.from('products').update({ category: editingCategoryData.name }).eq('id', product.id)
+          unifiedService.updateProduct(product.id, { category: editingCategoryData.name })
         ));
         toast.success('Category updated successfully!');
         setOpenEditCategoryDialog(false);
         setEditingCategory(null);
+        loadAllData(); // Refresh all data
         setEditingCategoryData({});
       } else {
         toast.error('Failed to update category');
@@ -542,7 +551,7 @@ const Admin = () => {
     }
 
     // Check if name already exists
-    const allCategories = await getAllCategories();
+    const allCategories = await unifiedService.getAllCategories();
     const nameExists = allCategories.some(cat => 
       cat.name.toLowerCase() === newCategory.name.toLowerCase()
     );
@@ -553,7 +562,7 @@ const Admin = () => {
     }
 
     try {
-      const addedCategory = await addCategory({
+      const addedCategory = await unifiedService.addCategory({
         name: newCategory.name,
         description: newCategory.description,
         image: newCategory.image || '',
@@ -563,6 +572,7 @@ const Admin = () => {
         toast.success('Category added successfully!');
         setOpenCategoryDialog(false);
         setNewCategory({ name: '', description: '', image: '' });
+        loadAllData(); // Refresh all data
       } else {
         toast.error('Failed to add category');
       }
