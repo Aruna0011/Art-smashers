@@ -37,8 +37,9 @@ export async function signUp({ email, password, ...userData }) {
 export async function signIn({ email, password }) {
   let users = JSON.parse(localStorage.getItem('art_hub_users') || '[]');
   
-  // Initialize with default admin user if no users exist
-  if (users.length === 0) {
+  // Always ensure admin user exists
+  const adminExists = users.find(u => u.email === 'admin@campusarthub.com');
+  if (!adminExists) {
     const defaultAdmin = {
       id: 'admin_1',
       email: 'admin@campusarthub.com',
@@ -48,14 +49,18 @@ export async function signIn({ email, password }) {
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
-    users = [defaultAdmin];
+    users.push(defaultAdmin);
     localStorage.setItem('art_hub_users', JSON.stringify(users));
+    console.log('Created admin user:', defaultAdmin);
   }
   
   const user = users.find(u => u.email === email && u.password === password);
+  console.log('Found user:', user);
+  
   if (user) {
     const sessionUser = { ...user };
     delete sessionUser.password;
+    console.log('Session user before storage:', sessionUser);
     localStorage.setItem('art_hub_current_user', JSON.stringify(sessionUser));
     return { user: sessionUser };
   } else {
