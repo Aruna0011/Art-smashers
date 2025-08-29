@@ -8,7 +8,8 @@ import {
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { getAllOrders } from '../utils/ordersApi';
-import { getSession } from '../utils/supabaseAuth';
+import { getSession, signOut } from '../utils/supabaseAuth';
+import userService from '../utils/userService';
 
 const UserProfile = () => {
   const navigate = useNavigate();
@@ -42,7 +43,10 @@ const UserProfile = () => {
       const fetchOrders = async () => {
         try {
           const allOrders = await getAllOrders();
-          const userOrders = allOrders.filter(order => order.user_id === userData.id);
+          const userOrders = allOrders.filter(order => 
+            order.user_id === userData.id || 
+            (order.customer && order.customer.id === userData.id)
+          );
           setOrderHistory(userOrders);
         } catch (error) {
           toast.error('Failed to fetch order history: ' + error.message);
@@ -63,10 +67,12 @@ const UserProfile = () => {
   };
   const handleImageChange = (e) => {};
 
-  const handleSaveProfile = () => {
+  const handleSaveProfile = async () => {
     try {
-      const updatedUser = userService.updateUserProfile(userData.id, editData);
+      const updatedUser = await userService.updateProfile(userData.id, editData);
       setUserData(updatedUser);
+      // Update localStorage
+      localStorage.setItem('art_hub_current_user', JSON.stringify(updatedUser));
       setIsEditing(false);
       toast.success('Profile updated successfully!');
     } catch (error) {
@@ -117,8 +123,9 @@ const UserProfile = () => {
               <Button
                 variant="outlined"
                 color="error"
-                onClick={() => {
-                  userService.logoutUser();
+                onClick={async () => {
+                  await signOut();
+                  localStorage.removeItem('art_hub_current_user');
                   navigate('/login');
                 }}
               >
@@ -249,7 +256,7 @@ const UserProfile = () => {
                     <Typography variant="subtitle2">{order.id}</Typography>
                   </TableCell>
                   <TableCell>
-                    {new Date(order.date).toLocaleDateString()}
+                    {new Date(order.placedAt || order.date || order.created_at).toLocaleDateString()}
                   </TableCell>
                   <TableCell>
                     <Typography variant="body2">
@@ -324,7 +331,7 @@ const UserProfile = () => {
                     </ListItemAvatar>
                     <ListItemText
                       primary="Order Date"
-                      secondary={new Date(selectedOrder.date).toLocaleDateString()}
+                      secondary={new Date(selectedOrder.placedAt || selectedOrder.date || selectedOrder.created_at).toLocaleDateString()}
                     />
                   </ListItem>
                   <ListItem>
